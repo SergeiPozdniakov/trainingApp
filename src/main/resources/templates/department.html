@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${department.name} + ' - Подразделение'"></title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a th:href="@{/dashboard}">Главная</a></li>
+      <li class="breadcrumb-item"><a th:href="@{/departments}">Подразделения</a></li>
+      <li class="breadcrumb-item active" th:text="${department.name}"></li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 th:text="${department.name}"></h1>
+    <div>
+      <a th:href="@{/employees/new(departmentId=${department.id})}"
+         class="btn btn-success me-2">
+        Добавить сотрудника
+      </a>
+      <a th:href="@{/departments/{id}/edit(id=${department.id})}"
+         class="btn btn-primary me-2">
+        Редактировать
+      </a>
+      <button type="button" class="btn btn-danger"
+              onclick="confirmDelete('departments/${department.id}/delete',
+                        'Вы уверены, что хотите удалить это подразделение?')">
+        Удалить
+      </button>
+    </div>
+  </div>
+
+  <!-- Динамическая таблица сотрудников -->
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+        <table class="table table-bordered table-striped">
+          <thead class="thead-dark" style="position: sticky; top: 0; z-index: 1; background: white;">
+          <tr>
+            <th>№</th>
+            <th>ФИО</th>
+            <th>Должность</th>
+            <th>Email</th>
+            <th th:each="trainingType : ${trainingTypes}"
+                th:text="${trainingType.name}">
+            </th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="employee, iterStat : ${employeeTable}">
+            <td th:text="${iterStat.count}"></td>
+            <td>
+              <a th:href="@{/employees/{id}/edit(id=${employee.id})}"
+                 th:text="${employee.fullName}"></a>
+            </td>
+            <td th:text="${employee.position}"></td>
+            <td th:text="${employee.email}"></td>
+
+            <!-- Динамические столбцы для каждого типа обучения -->
+            <td th:each="trainingType : ${trainingTypes}"
+                th:style="'background-color: ' +
+                                    (${employee.certificatesByTrainingType != null &&
+                                      employee.certificatesByTrainingType.containsKey(trainingType.id)} ?
+                                      ${employee.certificatesByTrainingType.get(trainingType.id).statusColor} : 'white')">
+
+              <div th:if="${employee.certificatesByTrainingType != null &&
+                                                 employee.certificatesByTrainingType.containsKey(trainingType.id)}">
+                <div>
+                  <strong>Дата:</strong>
+                  <span th:text="${#dates.format(employee.certificatesByTrainingType.get(trainingType.id).examDate, 'dd.MM.yyyy')}">
+                                            </span>
+                </div>
+                <div>
+                  <strong>Протокол:</strong>
+                  <span th:text="${employee.certificatesByTrainingType.get(trainingType.id).protocolNumber}">
+                                            </span>
+                </div>
+                <div th:if="${employee.certificatesByTrainingType.get(trainingType.id).filePath != null}">
+                  <a th:href="@{/certificates/{id}/download(id=${employee.certificatesByTrainingType.get(trainingType.id).certificateId})}"
+                     class="btn btn-sm btn-link">
+                    Скачать PDF
+                  </a>
+                </div>
+                <div>
+                  <form th:action="@{/certificates/{id}(id=${employee.certificatesByTrainingType.get(trainingType.id).certificateId})}"
+                        method="post" style="display: inline;">
+                    <input type="hidden" name="_method" value="delete"/>
+                    <button type="submit" class="btn btn-sm btn-danger"
+                            onclick="return confirm('Удалить эту запись?')">
+                      Удалить
+                    </button>
+                  </form>
+                  <a th:href="@{/certificates/{id}/edit(id=${employee.certificatesByTrainingType.get(trainingType.id).certificateId})}"
+                     class="btn btn-sm btn-primary">
+                    Редактировать
+                  </a>
+                </div>
+              </div>
+              <div th:unless="${employee.certificatesByTrainingType != null &&
+                                                    employee.certificatesByTrainingType.containsKey(trainingType.id)}">
+                <a th:href="@{/certificates/new(employeeId=${employee.id}, trainingTypeId=${trainingType.id})}"
+                   class="btn btn-sm btn-outline-success">
+                  Добавить запись
+                </a>
+              </div>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>
