@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.w3.org/1999/xhtml"
+      layout:decorate="~{fragments/layout}">
+<head>
+  <title>Направления обучения</title>
+</head>
+<body>
+<div layout:fragment="content">
+  <div class="card mb-4">
+    <div class="card-body">
+      <h1 class="card-title">
+        <i class="fas fa-book-open me-3"></i>Направления обучения
+      </h1>
+      <p class="text-muted">Управление направлениями обучения и их периодичностью</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4 mb-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-plus-circle me-2"></i>Создать направление
+          </h5>
+        </div>
+        <div class="card-body">
+          <form th:action="@{/admin/training-directions}"
+                th:object="${direction}" method="post">
+            <div class="mb-3">
+              <label for="name" class="form-label">Название *</label>
+              <input type="text" class="form-control" id="name"
+                     th:field="*{name}" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="validityMonths" class="form-label">
+                Периодичность (месяцы) *
+              </label>
+              <select class="form-select" id="validityMonths"
+                      th:field="*{validityMonths}" required>
+                <option value="12">1 год (12 месяцев)</option>
+                <option value="24">2 года (24 месяца)</option>
+                <option value="36">3 года (36 месяцев)</option>
+                <option value="60">5 лет (60 месяцев)</option>
+                <option value="0">Бессрочно</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label">Описание</label>
+              <textarea class="form-control" id="description"
+                        th:field="*{description}" rows="3"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fas fa-save me-2"></i>Создать направление
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>Список направлений
+            <span class="badge bg-primary ms-2" th:text="${directions.size()}"></span>
+          </h5>
+        </div>
+        <div class="card-body">
+          <div th:if="${directions.isEmpty()}" class="text-center py-5">
+            <i class="fas fa-book fa-4x text-muted mb-3"></i>
+            <h5 class="text-muted">Направления обучения не созданы</h5>
+            <p class="text-muted">Создайте первое направление с помощью формы слева</p>
+          </div>
+
+          <div th:unless="${directions.isEmpty()}">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                <tr>
+                  <th>Название</th>
+                  <th>Периодичность</th>
+                  <th>Описание</th>
+                  <th width="100">Действия</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="direction : ${directions}">
+                  <td th:text="${direction.name}" class="fw-bold"></td>
+                  <td>
+                                                <span th:switch="${direction.validityMonths}">
+                                                    <span th:case="12" class="badge bg-success">
+                                                        1 год
+                                                    </span>
+                                                    <span th:case="24" class="badge bg-info">
+                                                        2 года
+                                                    </span>
+                                                    <span th:case="36" class="badge bg-warning">
+                                                        3 года
+                                                    </span>
+                                                    <span th:case="60" class="badge bg-danger">
+                                                        5 лет
+                                                    </span>
+                                                    <span th:case="0" class="badge bg-secondary">
+                                                        Бессрочно
+                                                    </span>
+                                                    <span th:case="*" class="badge bg-primary">
+                                                        <span th:text="${direction.validityMonths}"></span> мес.
+                                                    </span>
+                                                </span>
+                  </td>
+                  <td th:text="${direction.description} ?: '-'"></td>
+                  <td>
+                    <form th:action="@{'/admin/training-directions/' + ${direction.id} + '/delete'}"
+                          method="post"
+                          onsubmit="return confirm('Удалить направление обучения?')">
+                      <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

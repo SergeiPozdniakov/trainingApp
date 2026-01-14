@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.w3.org/1999/xhtml"
+      layout:decorate="~{fragments/layout}">
+<head>
+  <title>Управление пользователями</title>
+</head>
+<body>
+<div layout:fragment="content">
+  <div class="card mb-4">
+    <div class="card-body">
+      <h1 class="card-title">
+        <i class="fas fa-users-cog me-3"></i>Управление пользователями
+      </h1>
+      <p class="text-muted">Подтверждение и управление пользователями системы</p>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-warning text-white">
+      <h5 class="mb-0">
+        <i class="fas fa-user-clock me-2"></i>Ожидают подтверждения
+        <span class="badge bg-light text-dark ms-2" th:text="${pendingUsers.size()}"></span>
+      </h5>
+    </div>
+    <div class="card-body">
+      <div th:if="${pendingUsers.isEmpty()}" class="text-center py-4">
+        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+        <h5 class="text-muted">Нет пользователей, ожидающих подтверждения</h5>
+      </div>
+
+      <div th:unless="${pendingUsers.isEmpty()}">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+            <tr>
+              <th>ФИО</th>
+              <th>Имя пользователя</th>
+              <th>Email</th>
+              <th>Дата регистрации</th>
+              <th width="150">Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="user : ${pendingUsers}">
+              <td th:text="${user.fullName}"></td>
+              <td th:text="${user.username}"></td>
+              <td th:text="${user.email}"></td>
+              <td th:text="${#temporals.format(user.createdAt, 'dd.MM.yyyy HH:mm')}"></td>
+              <td>
+                <form th:action="@{'/admin/users/approve/' + ${user.id}}"
+                      method="post" class="d-inline">
+                  <button type="submit" class="btn btn-success btn-sm">
+                    <i class="fas fa-check me-1"></i>Подтвердить
+                  </button>
+                </form>
+                <form th:action="@{'/admin/users/delete/' + ${user.id}}"
+                      method="post" class="d-inline"
+                      onsubmit="return confirm('Удалить пользователя?')">
+                  <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0">
+        <i class="fas fa-user-check me-2"></i>Активные пользователи
+        <span class="badge bg-light text-dark ms-2" th:text="${activeUsers.size()}"></span>
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+          <tr>
+            <th>ФИО</th>
+            <th>Имя пользователя</th>
+            <th>Email</th>
+            <th>Роль</th>
+            <th>Дата подтверждения</th>
+            <th width="100">Действия</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="user : ${activeUsers}">
+            <td th:text="${user.fullName}"></td>
+            <td th:text="${user.username}"></td>
+            <td th:text="${user.email}"></td>
+            <td>
+                                    <span th:if="${user.admin}" class="badge bg-primary">
+                                        <i class="fas fa-crown me-1"></i>Администратор
+                                    </span>
+              <span th:unless="${user.admin}" class="badge bg-secondary">
+                                        <i class="fas fa-user me-1"></i>Пользователь
+                                    </span>
+            </td>
+            <td th:text="${user.approvedAt != null ? #temporals.format(user.approvedAt, 'dd.MM.yyyy HH:mm') : '-'}"></td>
+            <td>
+              <form th:action="@{'/admin/users/delete/' + ${user.id}}"
+                    method="post"
+                    onsubmit="return confirm('Удалить пользователя?')">
+                <button type="submit" class="btn btn-danger btn-sm">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
