@@ -15,6 +15,7 @@ build/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+/uploads/protocols/
 
 ### Eclipse ###
 .apt_generated

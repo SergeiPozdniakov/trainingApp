@@ -15,4 +15,5 @@ public interface TrainingRecordRepository extends JpaRepository<TrainingRecord, 
     List<TrainingRecord> findByEmployeeDepartmentId(Long departmentId);
     List<TrainingRecord> findAll();
     long count();
+
 }

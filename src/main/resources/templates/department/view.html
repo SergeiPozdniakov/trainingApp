@@ -428,7 +428,6 @@
           <tbody>
           <!-- Сортировка по ФИО уже выполняется в сервисе -->
           <tr th:each="employee, stat : ${employees}">
-            <td class="employee-number text-center" th:text="${stat.count}"></td>
             <td class="employee-name-multiline">
               <!-- ФИО как ссылка для редактирования -->
               <a th:href="@{'/departments/' + ${department.id} + '/employees/' + ${employee.id} + '/edit'}"
@@ -436,6 +435,8 @@
                  class="employee-name-link"
                  title="Нажмите для редактирования сотрудника">
               </a>
+              <div class="text-muted small mt-1" th:text="${employee.position}"></div>
+              <div class="text-muted small" th:text="${employee.email}"></div>
             </td>
 
             <!-- Ячейки обучения -->

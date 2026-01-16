@@ -138,4 +138,8 @@ public class TrainingService {
     public long getTotalTrainingRecordsCount() {
         return trainingRecordRepository.count();
     }
+
+    public List<TrainingRecord> getAllTrainingRecords() {
+        return trainingRecordRepository.findAll();
+    }
 }

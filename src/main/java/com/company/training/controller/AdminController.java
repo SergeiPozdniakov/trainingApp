@@ -13,6 +13,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
+
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
@@ -97,6 +99,11 @@ public class AdminController {
         if (result.hasErrors()) {
             redirectAttributes.addFlashAttribute("error", "Ошибка валидации");
             return "redirect:/admin/training-directions";
+        }
+
+        // Установка стоимости по умолчанию, если не указана
+        if (direction.getCost() == null) {
+            direction.setCost(BigDecimal.ZERO);
         }
 
         trainingService.createTrainingDirection(direction);

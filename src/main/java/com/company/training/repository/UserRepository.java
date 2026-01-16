@@ -15,4 +15,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByEnabledFalse();
     long count();
     List<User> findByEnabledTrue();
+    List<User> findByAdminTrueAndEnabledTrue();
 }

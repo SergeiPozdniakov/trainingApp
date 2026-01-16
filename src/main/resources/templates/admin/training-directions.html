@@ -11,7 +11,7 @@
       <h1 class="card-title">
         <i class="fas fa-book-open me-3"></i>Направления обучения
       </h1>
-      <p class="text-muted">Управление направлениями обучения и их периодичностью</p>
+      <p class="text-muted">Управление направлениями обучения, их периодичностью и стоимостью</p>
     </div>
   </div>
 
@@ -24,8 +24,7 @@
           </h5>
         </div>
         <div class="card-body">
-          <form th:action="@{/admin/training-directions}"
-                th:object="${direction}" method="post">
+          <form th:action="@{/admin/training-directions}" th:object="${direction}" method="post">
             <div class="mb-3">
               <label for="name" class="form-label">Название *</label>
               <input type="text" class="form-control" id="name"
@@ -38,12 +37,25 @@
               </label>
               <select class="form-select" id="validityMonths"
                       th:field="*{validityMonths}" required>
+                <option value="">Выберите периодичность</option>
+                <option value="1">1 месяц</option>
+                <option value="3">3 месяца</option>
+                <option value="6">6 месяцев</option>
                 <option value="12">1 год (12 месяцев)</option>
                 <option value="24">2 года (24 месяца)</option>
                 <option value="36">3 года (36 месяцев)</option>
                 <option value="60">5 лет (60 месяцев)</option>
                 <option value="0">Бессрочно</option>
               </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="cost" class="form-label">Стоимость (руб.) *</label>
+              <input type="number" class="form-control" id="cost"
+                     th:field="*{cost}" step="0.01" min="0"
+                     placeholder="0.00" required>
+              <div class="text-danger" th:if="${#fields.hasErrors('cost')}"
+                   th:errors="*{cost}"></div>
             </div>
 
             <div class="mb-3">
@@ -82,6 +94,7 @@
                 <tr>
                   <th>Название</th>
                   <th>Периодичность</th>
+                  <th>Стоимость</th>
                   <th>Описание</th>
                   <th width="100">Действия</th>
                 </tr>
@@ -90,27 +103,23 @@
                 <tr th:each="direction : ${directions}">
                   <td th:text="${direction.name}" class="fw-bold"></td>
                   <td>
-                                                <span th:switch="${direction.validityMonths}">
-                                                    <span th:case="12" class="badge bg-success">
-                                                        1 год
-                                                    </span>
-                                                    <span th:case="24" class="badge bg-info">
-                                                        2 года
-                                                    </span>
-                                                    <span th:case="36" class="badge bg-warning">
-                                                        3 года
-                                                    </span>
-                                                    <span th:case="60" class="badge bg-danger">
-                                                        5 лет
-                                                    </span>
-                                                    <span th:case="0" class="badge bg-secondary">
-                                                        Бессрочно
-                                                    </span>
-                                                    <span th:case="*" class="badge bg-primary">
-                                                        <span th:text="${direction.validityMonths}"></span> мес.
-                                                    </span>
-                                                </span>
+                    <span th:switch="${direction.validityMonths}">
+                      <span th:case="1" class="badge bg-secondary">1 месяц</span>
+                      <span th:case="3" class="badge bg-info">3 месяца</span>
+                      <span th:case="6" class="badge bg-primary">6 месяцев</span>
+                      <span th:case="12" class="badge bg-success">1 год</span>
+                      <span th:case="24" class="badge bg-warning">2 года</span>
+                      <span th:case="36" class="badge bg-danger">3 года</span>
+                      <span th:case="60" class="badge bg-dark">5 лет</span>
+                      <span th:case="0" class="badge bg-secondary">
+                        Бессрочно
+                      </span>
+                      <span th:case="*" class="badge bg-primary">
+                        <span th:text="${direction.validityMonths}"></span> мес.
+                      </span>
+                    </span>
                   </td>
+                  <td th:text="${direction.formattedCost}" class="fw-bold text-success"></td>
                   <td th:text="${direction.description} ?: '-'"></td>
                   <td>
                     <form th:action="@{'/admin/training-directions/' + ${direction.id} + '/delete'}"

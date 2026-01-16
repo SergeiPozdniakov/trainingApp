@@ -91,6 +91,51 @@
     .login-link a:hover {
         text-decoration: underline;
     }
+
+    /* Стили для выравнивания полей формы */
+    .form-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #495057;
+    }
+
+    .form-label i {
+        margin-right: 8px;
+        color: #667eea;
+        width: 20px;
+        text-align: center;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    /* Выравнивание полей в одной строке */
+    .row.g-3 {
+        row-gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+        .row.g-3 {
+            row-gap: 0;
+        }
+        .col-md-6 {
+            padding-left: 7.5px !important;
+            padding-right: 7.5px !important;
+        }
+    }
+
+    .input-group {
+        position: relative;
+    }
+
+    /* Стили для ошибок валидации */
+    .text-danger {
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+    }
   </style>
 </head>
 <body>
@@ -103,31 +148,35 @@
     </div>
 
     <form th:action="@{/register}" th:object="${registrationForm}" method="post">
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label for="username" class="form-label">
-            <i class="fas fa-user me-2"></i>Имя пользователя *
-          </label>
-          <input type="text" class="form-control" id="username"
-                 th:field="*{username}" required>
-          <div class="text-danger" th:if="${#fields.hasErrors('username')}"
-               th:errors="*{username}"></div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="username" class="form-label">
+              <i class="fas fa-user"></i>Имя пользователя *
+            </label>
+            <input type="text" class="form-control" id="username"
+                   th:field="*{username}" required>
+            <div class="text-danger" th:if="${#fields.hasErrors('username')}"
+                 th:errors="*{username}"></div>
+          </div>
         </div>
 
-        <div class="col-md-6 mb-3">
-          <label for="fullName" class="form-label">
-            <i class="fas fa-id-card me-2"></i>ФИО *
-          </label>
-          <input type="text" class="form-control" id="fullName"
-                 th:field="*{fullName}" required>
-          <div class="text-danger" th:if="${#fields.hasErrors('fullName')}"
-               th:errors="*{fullName}"></div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="fullName" class="form-label">
+              <i class="fas fa-id-card"></i>ФИО *
+            </label>
+            <input type="text" class="form-control" id="fullName"
+                   th:field="*{fullName}" required>
+            <div class="text-danger" th:if="${#fields.hasErrors('fullName')}"
+                 th:errors="*{fullName}"></div>
+          </div>
         </div>
       </div>
 
-      <div class="mb-3">
+      <div class="form-group mb-3">
         <label for="email" class="form-label">
-          <i class="fas fa-envelope me-2"></i>Email *
+          <i class="fas fa-envelope"></i>Email *
         </label>
         <input type="email" class="form-control" id="email"
                th:field="*{email}" required>
@@ -135,25 +184,29 @@
              th:errors="*{email}"></div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label for="password" class="form-label">
-            <i class="fas fa-lock me-2"></i>Пароль *
-          </label>
-          <input type="password" class="form-control" id="password"
-                 th:field="*{password}" required>
-          <div class="text-danger" th:if="${#fields.hasErrors('password')}"
-               th:errors="*{password}"></div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="password" class="form-label">
+              <i class="fas fa-lock"></i>Пароль *
+            </label>
+            <input type="password" class="form-control" id="password"
+                   th:field="*{password}" required>
+            <div class="text-danger" th:if="${#fields.hasErrors('password')}"
+                 th:errors="*{password}"></div>
+          </div>
         </div>
 
-        <div class="col-md-6 mb-3">
-          <label for="confirmPassword" class="form-label">
-            <i class="fas fa-lock me-2"></i>Подтверждение *
-          </label>
-          <input type="password" class="form-control" id="confirmPassword"
-                 th:field="*{confirmPassword}" required>
-          <div class="text-danger" th:if="${#fields.hasErrors('confirmPassword')}"
-               th:errors="*{confirmPassword}"></div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="confirmPassword" class="form-label">
+              <i class="fas fa-lock"></i>Подтверждение *
+            </label>
+            <input type="password" class="form-control" id="confirmPassword"
+                   th:field="*{confirmPassword}" required>
+            <div class="text-danger" th:if="${#fields.hasErrors('confirmPassword')}"
+                 th:errors="*{confirmPassword}"></div>
+          </div>
         </div>
       </div>
 

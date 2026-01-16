@@ -36,6 +36,10 @@ public class TrainingRecord {
     @Column(name = "created_at")
     private LocalDate createdAt;
 
+    // УБРАЛИ @Formula и сделаем вычисление в геттере
+    @Transient // Это поле не сохраняется в БД, вычисляется на лету
+    private LocalDate nextExamDate;
+
     // Конструкторы
     public TrainingRecord() {}
 
@@ -50,14 +54,6 @@ public class TrainingRecord {
         if (createdAt == null) {
             createdAt = LocalDate.now();
         }
-    }
-
-    // Вспомогательные методы
-    public LocalDate getNextExamDate() {
-        if (examDate != null && trainingDirection != null && trainingDirection.getValidityMonths() != null) {
-            return examDate.plusMonths(trainingDirection.getValidityMonths());
-        }
-        return null;
     }
 
     // Геттеры и сеттеры
@@ -117,5 +113,25 @@ public class TrainingRecord {
             return "success";
         }
         return "light";
+    }
+
+    // ВЫЧИСЛЯЕМ nextExamDate динамически
+    public LocalDate getNextExamDate() {
+        // Если поле уже установлено (например, в тестах), возвращаем его
+        if (nextExamDate != null) {
+            return nextExamDate;
+        }
+
+        // Иначе вычисляем на основе examDate и validityMonths
+        if (examDate != null && trainingDirection != null && trainingDirection.getValidityMonths() != null) {
+            return examDate.plusMonths(trainingDirection.getValidityMonths());
+        }
+
+        return null;
+    }
+
+    // Сеттер только для тестов
+    public void setNextExamDate(LocalDate nextExamDate) {
+        this.nextExamDate = nextExamDate;
     }
 }
