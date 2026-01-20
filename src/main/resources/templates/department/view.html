@@ -223,12 +223,16 @@
         width: 30px !important;
         min-width: 30px !important;
         max-width: 30px !important;
+        text-align: center;
+        vertical-align: middle;
     }
 
     .employee-actions {
         width: 40px !important;
         min-width: 40px !important;
         max-width: 40px !important;
+        text-align: center;
+        vertical-align: middle;
     }
 
     /* Улучшаем скролл */
@@ -387,7 +391,7 @@
     </div>
   </div>
 
-  <!-- Таблица сотрудников (ТОЛЬКО ФИО) -->
+  <!-- Таблица сотрудников -->
   <div class="card">
     <div class="card-header py-1">
       <div class="d-flex justify-content-between align-items-center">
@@ -422,14 +426,17 @@
                 th:title="${direction.description} ?: direction.name + ' (' + direction.validityMonths + ' мес.)'"
                 class="text-center training-cell">
             </th>
-            <th class="employee-actions"></th>
+            <th class="employee-actions">Действия</th>
           </tr>
           </thead>
           <tbody>
           <!-- Сортировка по ФИО уже выполняется в сервисе -->
           <tr th:each="employee, stat : ${employees}">
+            <!-- Колонка 1: Номер по порядку -->
+            <td class="employee-number" th:text="${stat.count}"></td>
+
+            <!-- Колонка 2: ФИО, должность и email -->
             <td class="employee-name-multiline">
-              <!-- ФИО как ссылка для редактирования -->
               <a th:href="@{'/departments/' + ${department.id} + '/employees/' + ${employee.id} + '/edit'}"
                  th:text="${employee.fullName}"
                  class="employee-name-link"
@@ -439,7 +446,7 @@
               <div class="text-muted small" th:text="${employee.email}"></div>
             </td>
 
-            <!-- Ячейки обучения -->
+            <!-- Колонки 3-N: Ячейки обучения для каждого направления -->
             <td th:each="direction : ${directions}"
                 th:data-validity-months="${direction.validityMonths}"
                 th:classappend="${trainingRecordsMap.get(employee.id)?.get(direction.id) != null ?
@@ -470,7 +477,6 @@
                          th:value="${record?.protocolNumber}"
                          placeholder="№ протокола">
 
-                  <!-- Статус применимости -->
                   <!-- Статус применимости -->
                   <div class="radio-group mb-1">
                     <!-- Применимо -->
@@ -533,11 +539,11 @@
               </th:block>
             </td>
 
-            <!-- Действия (только удаление) -->
+            <!-- Последняя колонка: Действия (удаление сотрудника) -->
             <td class="employee-actions">
               <form th:action="@{'/departments/' + ${department.id} + '/employees/' + ${employee.id} + '/delete'}"
                     method="post"
-                    onsubmit="return confirm('Удалить сотрудника ' + '${employee.fullName}' + '?')">
+                    onsubmit="return confirm('Удалить сотрудника \'' + '${employee.fullName}' + '\'?')">
                 <button type="submit" class="btn btn-danger btn-sm w-100" title="Удалить сотрудника">
                   <i class="fas fa-trash fa-xs"></i>
                 </button>
@@ -570,183 +576,143 @@
   }, 4000);
 
   // Функция для обновления стиля ячейки
-  // Функция для обновления стиля ячейки
-// Функция для обновления стиля ячейки
-function updateCellStyle(cell) {
-    if (!cell) return;
+  function updateCellStyle(cell) {
+      if (!cell) return;
 
-    // Удаляем все классы статусов
-    cell.classList.remove('status-valid', 'status-warning', 'status-expired', 'status-inapplicable', 'status-info');
+      // Удаляем все классы статусов
+      cell.classList.remove('status-valid', 'status-warning', 'status-expired', 'status-inapplicable', 'status-info');
 
-    const dateInput = cell.querySelector('input[type="date"]');
-    const notApplicableRadio = cell.querySelector('input[value="false"]:checked');
-    const applicableRadio = cell.querySelector('input[value="true"]:checked');
+      const dateInput = cell.querySelector('input[type="date"]');
+      const notApplicableRadio = cell.querySelector('input[value="false"]:checked');
+      const applicableRadio = cell.querySelector('input[value="true"]:checked');
 
-    // 1. Если выбрано "Неприменимо" -> СЕРЫЙ (самый высокий приоритет)
-    if (notApplicableRadio && notApplicableRadio.checked) {
-        // Обновляем активные классы у label
-        const labels = cell.querySelectorAll('.radio-label');
-        labels.forEach(label => label.classList.remove('active'));
-        const notApplicableLabel = cell.querySelector('label[for="' + notApplicableRadio.id + '"]');
-        if (notApplicableLabel) notApplicableLabel.classList.add('active');
+      // 1. Если выбрано "Неприменимо" -> СЕРЫЙ (самый высокий приоритет)
+      if (notApplicableRadio && notApplicableRadio.checked) {
+          // Обновляем активные классы у label
+          const labels = cell.querySelectorAll('.radio-label');
+          labels.forEach(label => label.classList.remove('active'));
+          const notApplicableLabel = cell.querySelector('label[for="' + notApplicableRadio.id + '"]');
+          if (notApplicableLabel) notApplicableLabel.classList.add('active');
 
-        cell.classList.add('status-inapplicable');
-        return;
-    }
+          cell.classList.add('status-inapplicable');
+          return;
+      }
 
-    // 2. Если выбрано "Применимо"
-    if (applicableRadio && applicableRadio.checked) {
-        // Обновляем активные классы у label
-        const labels = cell.querySelectorAll('.radio-label');
-        labels.forEach(label => label.classList.remove('active'));
-        const applicableLabel = cell.querySelector('label[for="' + applicableRadio.id + '"]');
-        if (applicableLabel) applicableLabel.classList.add('active');
+      // 2. Если выбрано "Применимо"
+      if (applicableRadio && applicableRadio.checked) {
+          // Обновляем активные классы у label
+          const labels = cell.querySelectorAll('.radio-label');
+          labels.forEach(label => label.classList.remove('active'));
+          const applicableLabel = cell.querySelector('label[for="' + applicableRadio.id + '"]');
+          if (applicableLabel) applicableLabel.classList.add('active');
 
-        // 2.1. Если дата отсутствует -> СИНИЙ (нужно указать дату)
-        if (!dateInput || !dateInput.value) {
-            cell.classList.add('status-info');
-            return;
-        }
+          // 2.1. Если дата отсутствует -> СИНИЙ (нужно указать дату)
+          if (!dateInput || !dateInput.value) {
+              cell.classList.add('status-info');
+              return;
+          }
 
-        // 2.2. Если дата есть, проверяем сроки
-        const examDate = new Date(dateInput.value);
-        const validityMonths = parseInt(cell.dataset.validityMonths) || 12;
+          // 2.2. Если дата есть, проверяем сроки
+          const examDate = new Date(dateInput.value);
+          const validityMonths = parseInt(cell.dataset.validityMonths) || 12;
 
-        // Если срок бессрочный (validityMonths === 0), то всегда зеленый
-        if (validityMonths === 0) {
-            cell.classList.add('status-valid');
-            return;
-        }
+          // Если срок бессрочный (validityMonths === 0), то всегда зеленый
+          if (validityMonths === 0) {
+              cell.classList.add('status-valid');
+              return;
+          }
 
-        const nextExamDate = new Date(examDate);
-        nextExamDate.setMonth(nextExamDate.getMonth() + validityMonths);
+          const nextExamDate = new Date(examDate);
+          nextExamDate.setMonth(nextExamDate.getMonth() + validityMonths);
 
-        const threeMonthsBefore = new Date(nextExamDate);
-        threeMonthsBefore.setMonth(threeMonthsBefore.getMonth() - 3);
+          const threeMonthsBefore = new Date(nextExamDate);
+          threeMonthsBefore.setMonth(threeMonthsBefore.getMonth() - 3);
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        nextExamDate.setHours(0, 0, 0, 0);
-        threeMonthsBefore.setHours(0, 0, 0, 0);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          nextExamDate.setHours(0, 0, 0, 0);
+          threeMonthsBefore.setHours(0, 0, 0, 0);
 
-        // Проверяем, не просрочено ли (сегодня > даты следующего экзамена)
-        if (today > nextExamDate) {
-            cell.classList.add('status-expired'); // КРАСНЫЙ - просрочено
-        }
-        // Проверяем, не наступает ли срок в течение 3 месяцев
-        // (сегодня >= трех месяцев до даты след. экзамена И сегодня < даты след. экзамена)
-        else if (today >= threeMonthsBefore && today <= nextExamDate) {
-            cell.classList.add('status-warning'); // ЖЕЛТЫЙ - скоро истекает
-        }
-        // Иначе все ок (сегодня < трех месяцев до даты след. экзамена)
-        else {
-            cell.classList.add('status-valid'); // ЗЕЛЕНЫЙ - все ок
-        }
-    }
-    // 3. Если ничего не выбрано (ни "Применимо", ни "Неприменимо")
-    else {
-        // Убираем активные классы у всех label
-        const labels = cell.querySelectorAll('.radio-label');
-        labels.forEach(label => label.classList.remove('active'));
+          // Проверяем, не просрочено ли (сегодня > даты следующего экзамена)
+          if (today > nextExamDate) {
+              cell.classList.add('status-expired'); // КРАСНЫЙ - просрочено
+          }
+          // Проверяем, не наступает ли срок в течение 3 месяцев
+          else if (today >= threeMonthsBefore && today <= nextExamDate) {
+              cell.classList.add('status-warning'); // ЖЕЛТЫЙ - скоро истекает
+          }
+          // Иначе все ок (сегодня < трех месяцев до даты след. экзамена)
+          else {
+              cell.classList.add('status-valid'); // ЗЕЛЕНЫЙ - все ок
+          }
+      }
+      // 3. Если ничего не выбрано (ни "Применимо", ни "Неприменимо")
+      else {
+          // Убираем активные классы у всех label
+          const labels = cell.querySelectorAll('.radio-label');
+          labels.forEach(label => label.classList.remove('active'));
 
-        // Если есть дата, но не выбрано "Применимо" - особый случай
-        if (dateInput && dateInput.value) {
-            const examDate = new Date(dateInput.value);
-            const validityMonths = parseInt(cell.dataset.validityMonths) || 12;
+          // Если есть дата, но не выбрано "Применимо" - особый случай
+          if (dateInput && dateInput.value) {
+              const examDate = new Date(dateInput.value);
+              const validityMonths = parseInt(cell.dataset.validityMonths) || 12;
 
-            if (validityMonths !== 0) {
-                const nextExamDate = new Date(examDate);
-                nextExamDate.setMonth(nextExamDate.getMonth() + validityMonths);
+              if (validityMonths !== 0) {
+                  const nextExamDate = new Date(examDate);
+                  nextExamDate.setMonth(nextExamDate.getMonth() + validityMonths);
 
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                nextExamDate.setHours(0, 0, 0, 0);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  nextExamDate.setHours(0, 0, 0, 0);
 
-                // Показываем статус по дате, но с оттенком (например, бледные цвета)
-                if (today > nextExamDate) {
-                    cell.classList.add('status-expired');
-                    cell.style.opacity = '0.6'; // Делаем бледнее
-                }
-            }
-        }
-    }
-}
+                  // Показываем статус по дате, но с оттенком
+                  if (today > nextExamDate) {
+                      cell.classList.add('status-expired');
+                      cell.style.opacity = '0.6';
+                  }
+              }
+          }
+      }
+  }
 
-// Инициализация стилей при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
-    // Инициализируем все ячейки
-    document.querySelectorAll('.training-cell').forEach(cell => {
-        // Устанавливаем активные классы для уже выбранных радиокнопок
-        const checkedRadio = cell.querySelector('input[type="radio"]:checked');
-        if (checkedRadio) {
-            const label = cell.querySelector('label[for="' + checkedRadio.id + '"]');
-            if (label) {
-                label.classList.add('active');
-            }
-        }
-        updateCellStyle(cell);
-    });
+  // Инициализация стилей при загрузке страницы
+  document.addEventListener('DOMContentLoaded', function() {
+      // Инициализируем все ячейки
+      document.querySelectorAll('.training-cell').forEach(cell => {
+          // Устанавливаем активные классы для уже выбранных радиокнопок
+          const checkedRadio = cell.querySelector('input[type="radio"]:checked');
+          if (checkedRadio) {
+              const label = cell.querySelector('label[for="' + checkedRadio.id + '"]');
+              if (label) {
+                  label.classList.add('active');
+              }
+          }
+          updateCellStyle(cell);
+      });
 
-    // Обработчик изменений для даты и радиокнопок
-    document.addEventListener('change', function(e) {
-        if (e.target.name === 'examDate' || e.target.name === 'applicable') {
-            const cell = e.target.closest('.training-cell');
+      // Обработчик изменений для даты и радиокнопок
+      document.addEventListener('change', function(e) {
+          if (e.target.name === 'examDate' || e.target.name === 'applicable') {
+              const cell = e.target.closest('.training-cell');
 
-            // Если это радиокнопка, обновляем активные классы
-            if (e.target.type === 'radio') {
-                // Убираем active у всех label в этой ячейке
-                const labels = cell.querySelectorAll('.radio-label');
-                labels.forEach(label => label.classList.remove('active'));
+              // Если это радиокнопка, обновляем активные классы
+              if (e.target.type === 'radio') {
+                  // Убираем active у всех label в этой ячейке
+                  const labels = cell.querySelectorAll('.radio-label');
+                  labels.forEach(label => label.classList.remove('active'));
 
-                // Добавляем active к нужному label
-                const activeLabel = cell.querySelector('label[for="' + e.target.id + '"]');
-                if (activeLabel) {
-                    activeLabel.classList.add('active');
-                }
-            }
+                  // Добавляем active к нужному label
+                  const activeLabel = cell.querySelector('label[for="' + e.target.id + '"]');
+                  if (activeLabel) {
+                      activeLabel.classList.add('active');
+                  }
+              }
 
-            // Обновляем стиль ячейки
-            updateCellStyle(cell);
-        }
-    });
-});
-
-// Дополнительно: функция для быстрого тестирования цветов
-function testStatusColors() {
-    const testData = [
-        { name: 'ЗЕЛЕНЫЙ - все ок', date: new Date(), months: 12, applicable: true },
-        { name: 'ЖЕЛТЫЙ - скоро истекает', date: new Date(new Date().getTime() - (9 * 30 * 24 * 60 * 60 * 1000)), months: 12, applicable: true },
-        { name: 'КРАСНЫЙ - просрочено', date: new Date(new Date().getTime() - (13 * 30 * 24 * 60 * 60 * 1000)), months: 12, applicable: true },
-        { name: 'СЕРЫЙ - неприменимо', date: new Date(), months: 12, applicable: false },
-        { name: 'СИНИЙ - нет даты', date: null, months: 12, applicable: true },
-    ];
-
-    console.log('Тест цветов статусов:');
-    testData.forEach(test => {
-        const nextExamDate = test.date ? new Date(test.date.getTime() + (test.months * 30 * 24 * 60 * 60 * 1000)) : null;
-        console.log(`${test.name}: Дата=${test.date?.toLocaleDateString()}, Следующий экзамен=${nextExamDate?.toLocaleDateString()}`);
-    });
-}
-
-// Функция для отладки - показывает информацию о ячейке
-function debugCell(cell) {
-    if (!cell) return;
-
-    const dateInput = cell.querySelector('input[type="date"]');
-    const notApplicableRadio = cell.querySelector('input[value="false"]:checked');
-    const applicableRadio = cell.querySelector('input[value="true"]:checked');
-    const validityMonths = parseInt(cell.dataset.validityMonths) || 12;
-
-    console.log('Отладка ячейки:', {
-        date: dateInput?.value,
-        applicable: applicableRadio?.checked,
-        notApplicable: notApplicableRadio?.checked,
-        validityMonths: validityMonths,
-        currentClasses: Array.from(cell.classList)
-    });
-}
-
-// Можно вызвать testStatusColors() в консоли для тестирования
+              // Обновляем стиль ячейки
+              updateCellStyle(cell);
+          }
+      });
+  });
 
   // Автозаполнение всех пустых дат
   function autoFillAllDates() {

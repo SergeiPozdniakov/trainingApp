@@ -15,7 +15,7 @@ public class TrainingDirection {
     private Long id;
 
     @NotBlank(message = "Название направления обязательно")
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 3000)
     private String name;
 
     @Min(value = 1, message = "Периодичность должна быть не менее 1 месяца")
@@ -26,6 +26,7 @@ public class TrainingDirection {
     @Column(precision = 10, scale = 2)
     private BigDecimal cost = BigDecimal.ZERO;
 
+    @Column(nullable = true, unique = false, length = 3000)
     private String description;
 
     // Конструкторы

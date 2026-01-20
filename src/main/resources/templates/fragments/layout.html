@@ -48,6 +48,12 @@
                         <i class="fas fa-book me-1"></i>Направления
                     </a>
                 </li>
+                <!-- НОВЫЙ ПУНКТ: PDF ПРОТОКОЛЫ -->
+                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <a class="nav-link" th:href="@{/admin/pdf/list}">
+                        <i class="fas fa-file-pdf me-1"></i>PDF Протоколы
+                    </a>
+                </li>
             </ul>
 
             <ul class="navbar-nav">

@@ -42,23 +42,33 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultHtmlFileTemplate": "HTML File",
-    "Gradle.Build trainingApp.executor": "Run",
-    "Gradle.QuickTrainingRequestTest.executor": "Run",
-    "Gradle.SimpleDocxTemplateTest.executor": "Run",
-    "Gradle.TrainingRequestGenerationTest.executor": "Run",
-    "Gradle.TrainingRequestServiceStandaloneTest.executor": "Run",
-    "Gradle.TrainingRequestServiceTest.executor": "Run",
-    "Gradle.TrainingRequestTemplateTest.executor": "Run",
-    "Gradle.trainingApp [:com.company.training.TrainingManagementApplication.main()].executor": "Run",
-    "JUnit.QuickTrainingRequestTest.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "kotlin-language-version-configured": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;Gradle.Build trainingApp.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.QuickTrainingRequestTest.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.SimpleDocxTemplateTest.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.TrainingRequestGenerationTest.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.TrainingRequestServiceStandaloneTest.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.TrainingRequestServiceTest.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.TrainingRequestTemplateTest.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.trainingApp [:com.company.training.TrainingManagementApplication.main()].executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.QuickTrainingRequestTest.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;
   }
-}]]></component>
-  <component name="RunManager" selected="Gradle.TrainingRequestServiceTest">
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\test\trainingApp\src\main\resources\templates\admin" />
+      <recent name="C:\test\trainingApp\src\main\resources\templates\admin\pdf" />
+      <recent name="C:\test\trainingApp\src\main\resources\templates" />
+    </key>
+    <key name="ExtractSuperBase.RECENT_KEYS">
+      <recent name="com.company.training.config" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Application.TrainingManagementApplication">
     <configuration name="TrainingManagementApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="com.company.training.TrainingManagementApplication" />
       <module name="training.main" />

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${title}">Валидация данных</title>
+    <link rel="stylesheet" href="/webjars/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .page-badge {
+            background-color: #6c757d;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+        }
+        .program-cell {
+            min-width: 300px;
+        }
+        .employee-cell {
+            min-width: 200px;
+        }
+        .small-font {
+            font-size: 0.85rem;
+        }
+        .program-name {
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .program-description {
+            font-size: 0.8rem;
+            color: #6c757d;
+            max-height: 40px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <h1 th:text="${title}">Валидация данных</h1>
+
+    <!-- Кнопки навигации -->
+    <div class="mb-3">
+        <a th:href="@{/admin/pdf/list}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Назад к списку
+        </a>
+        <a th:href="@{/admin/pdf/view-text/{id}(id=${document.id})}"
+           class="btn btn-outline-info btn-sm ms-2">
+            <i class="bi bi-eye"></i> Просмотреть OCR текст
+        </a>
+    </div>
+
+    <!-- Информация о документе -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Информация о документе</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Файл:</strong> <span th:text="${document.originalFilename}"></span></p>
+                    <p><strong>Тип:</strong> <span th:text="${document.type}"></span></p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Статус:</strong> <span th:text="${document.status}"></span></p>
+                    <p><strong>Страниц:</strong> <span th:text="${document.pageCount}"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основная форма -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                Найденные записи в протоколе: <span th:text="${records.size()}">0</span>
+                <small class="text-muted ms-2">(Обязательно проверьте и выберите правильное направление для каждой записи)</small>
+            </h5>
+            <div>
+                <button type="button" class="btn btn-outline-success btn-sm" onclick="selectAll(true)">
+                    <i class="bi bi-check-all"></i> Выбрать все
+                </button>
+                <button type="button" class="btn btn-outline-warning btn-sm ms-2" onclick="selectAll(false)">
+                    <i class="bi bi-x-circle"></i> Снять все
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <form th:action="@{/admin/pdf/save/{id}(id=${document.id})}" method="post" id="validationForm">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead class="table-light">
+                        <tr>
+                            <th width="30">
+                                <input type="checkbox" id="selectAll" onclick="toggleAll()">
+                            </th>
+                            <th width="40">№</th>
+                            <th width="80">Страница</th>
+                            <th class="employee-cell">ФИО сотрудника</th>
+                            <th width="120">Дата экзамена</th>
+                            <th width="120">№ протокола</th>
+                            <th class="program-cell">Направление обучения</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="record, stat : ${records}">
+                            <td>
+                                <input type="checkbox"
+                                       class="record-checkbox"
+                                       th:checked="${record.valid != false}"
+                                       th:id="'chk_' + ${stat.index}">
+                            </td>
+                            <td th:text="${stat.count}">1</td>
+                            <td>
+                                    <span th:if="${record.pageNumber != null}"
+                                          class="page-badge"
+                                          th:text="${record.pageNumber}">
+                                    </span>
+                                <span th:unless="${record.pageNumber != null}" class="text-muted">-</span>
+                            </td>
+                            <td class="employee-cell">
+                                <strong th:text="${record.fullName}">ФИО</strong>
+                                <div th:if="${record.position != null}" class="text-muted small-font">
+                                    <small th:text="${record.position}">Должность</small>
+                                </div>
+                                <div th:if="${record.matchedFullName != null and record.matchedFullName == record.fullName}"
+                                     class="text-success small-font">
+                                    <i class="bi bi-check-circle-fill"></i> Совпадение с БД
+                                </div>
+                            </td>
+                            <td>
+                                    <span th:text="${#temporals.format(record.examDate, 'dd.MM.yyyy')}">
+                                        01.01.2023
+                                    </span>
+                            </td>
+                            <td>
+                                <span th:text="${record.registrationNumber != null ? record.registrationNumber : '-'}"
+                                      th:class="${record.registrationNumber != null ? 'fw-bold' : 'text-muted'}">
+                                </span>
+                            </td>
+                            <td class="program-cell">
+                                <!-- Автоматически подобранное направление -->
+                                <div th:if="${record.trainingDirection != null}" class="mb-1">
+                                    <div class="program-name">
+                                        <span th:text="${record.trainingDirection}">Направление</span>
+                                        <span th:if="${record.directionConfidence != null}"
+                                              class="badge bg-success ms-1"
+                                              th:text="${record.directionConfidence}">100%</span>
+                                    </div>
+                                </div>
+
+                                <!-- Выбор направления из списка -->
+                                <select th:name="'records[' + ${stat.index} + '].selectedDirectionId'"
+                                        class="form-control form-control-sm mt-1"
+                                        th:required="true"
+                                        th:id="'dir_' + ${stat.index}">
+                                    <option value="">-- ВЫБЕРИТЕ НАПРАВЛЕНИЕ --</option>
+
+                                    <!-- Автоматически подобранное направление -->
+                                    <optgroup label="Автоматически подобранное" th:if="${record.matchedDirectionId != null}">
+                                        <option th:each="dir : ${directions}"
+                                                th:if="${dir.id == record.matchedDirectionId}"
+                                                th:value="${dir.id}"
+                                                th:title="${dir.description}"
+                                                th:text="${dir.name}"
+                                                th:selected="true">
+                                        </option>
+                                    </optgroup>
+
+                                    <!-- Все направления -->
+                                    <optgroup label="Все направления">
+                                        <option th:each="dir : ${directions}"
+                                                th:value="${dir.id}"
+                                                th:title="${dir.description}"
+                                                th:text="${dir.name}"
+                                                th:selected="${record.matchedDirectionId != null and record.matchedDirectionId == dir.id}">
+                                        </option>
+                                    </optgroup>
+                                </select>
+
+                                <small class="text-danger" th:if="${record.directionConfidence != null and record.directionConfidence == '0%'}">
+                                    <i class="bi bi-exclamation-triangle"></i> Направление не определено автоматически
+                                </small>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(records)}">
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="bi bi-info-circle"></i> Записи не найдены
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Скрытые поля -->
+                <div th:each="record, stat : ${records}">
+                    <input type="hidden" th:name="'records[' + ${stat.index} + '].id'"
+                           th:value="${record.id}">
+                    <input type="hidden" th:name="'records[' + ${stat.index} + '].fullName'"
+                           th:value="${record.fullName}">
+                    <input type="hidden" th:name="'records[' + ${stat.index} + '].examDate'"
+                           th:value="${#temporals.format(record.examDate, 'yyyy-MM-dd')}">
+                    <input type="hidden" th:name="'records[' + ${stat.index} + '].registrationNumber'"
+                           th:value="${record.registrationNumber}">
+                    <input type="hidden" th:name="'records[' + ${stat.index} + '].matchedEmployeeId'"
+                           th:value="${record.matchedEmployeeId}">
+                    <input type="hidden" th:name="'records[' + ${stat.index} + '].matchedDirectionId'"
+                           th:value="${record.matchedDirectionId}">
+                    <input type="hidden" th:name="'records[' + ${stat.index} + '].pdfDocumentId'"
+                           th:value="${record.pdfDocumentId}">
+                    <input type="hidden" th:name="'records[' + ${stat.index} + '].valid'"
+                           th:value="${record.valid != false}"
+                           th:id="'valid_' + ${stat.index}">
+                </div>
+
+                <div class="mt-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Сохранить выбранные записи
+                        </button>
+                        <span class="ms-3 text-muted">
+                            Выбрано: <span id="selectedCount">0</span> из <span th:text="${records.size()}">0</span>
+                        </span>
+                    </div>
+                    <div class="text-muted small">
+                        <i class="bi bi-info-circle"></i> Выберите записи и укажите направления обучения
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/webjars/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Функции для управления чекбоксами
+    function toggleAll() {
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.record-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+            updateRowState(checkbox);
+        });
+        updateSelectedCount();
+    }
+
+    function selectAll(checked) {
+        const checkboxes = document.querySelectorAll('.record-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = checked;
+            updateRowState(checkbox);
+        });
+        document.getElementById('selectAll').checked = checked;
+        updateSelectedCount();
+    }
+
+    function updateRowState(checkbox) {
+        const row = checkbox.closest('tr');
+        const validInput = row.querySelector('input[id^="valid_"]');
+        if (validInput) {
+            validInput.value = checkbox.checked;
+        }
+
+        // Подсветка обязательного поля направления
+        const select = row.querySelector('select[id^="dir_"]');
+        if (select) {
+            if (checkbox.checked && !select.value) {
+                select.classList.add('is-invalid');
+            } else {
+                select.classList.remove('is-invalid');
+            }
+        }
+    }
+
+    function updateSelectedCount() {
+        const checkedCount = document.querySelectorAll('.record-checkbox:checked').length;
+        document.getElementById('selectedCount').textContent = checkedCount;
+    }
+
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обработчики для чекбоксов записей
+        const checkboxes = document.querySelectorAll('.record-checkbox');
+        checkboxes.forEach(checkbox => {
+            // Инициализируем состояние
+            updateRowState(checkbox);
+
+            // Добавляем обработчик изменения
+            checkbox.addEventListener('change', function() {
+                updateRowState(this);
+                updateSelectedCount();
+
+                // Обновляем главный чекбокс
+                const allChecked = document.querySelectorAll('.record-checkbox:checked').length === checkboxes.length;
+                document.getElementById('selectAll').checked = allChecked;
+            });
+        });
+
+        // Обработчики для select направлений
+        const selects = document.querySelectorAll('select[id^="dir_"]');
+        selects.forEach(select => {
+            select.addEventListener('change', function() {
+                if (this.value) {
+                    this.classList.remove('is-invalid');
+                } else {
+                    const checkbox = this.closest('tr').querySelector('.record-checkbox');
+                    if (checkbox && checkbox.checked) {
+                        this.classList.add('is-invalid');
+                    }
+                }
+            });
+        });
+
+        // Инициализируем счетчик
+        updateSelectedCount();
+
+        // Предупреждение при отправке формы
+        document.getElementById('validationForm').addEventListener('submit', function(e) {
+            const checkedCount = document.querySelectorAll('.record-checkbox:checked').length;
+            if (checkedCount === 0) {
+                e.preventDefault();
+                alert('Выберите хотя бы одну запись для сохранения!');
+                return false;
+            }
+
+            // Проверяем, что для всех выбранных записей указано направление
+            let hasEmptyDirections = false;
+            const checkedCheckboxes = document.querySelectorAll('.record-checkbox:checked');
+            const emptyRecords = [];
+
+            checkedCheckboxes.forEach(checkbox => {
+                const row = checkbox.closest('tr');
+                const select = row.querySelector('select[id^="dir_"]');
+                if (select && !select.value) {
+                    hasEmptyDirections = true;
+                    select.classList.add('is-invalid');
+                    emptyRecords.push(row.cells[3].textContent.trim());
+                }
+            });
+
+            if (hasEmptyDirections) {
+                e.preventDefault();
+                alert('Для всех выбранных записей необходимо указать направление обучения!\n\n' +
+                      'Не указано направление для:\n' + emptyRecords.slice(0, 5).join('\n') +
+                      (emptyRecords.length > 5 ? '\n...и еще ' + (emptyRecords.length - 5) : ''));
+                return false;
+            }
+
+            return confirm(`Вы собираетесь сохранить ${checkedCount} записей в базу данных. Продолжить?`);
+        });
+    });
+</script>
+</body>
+</html>

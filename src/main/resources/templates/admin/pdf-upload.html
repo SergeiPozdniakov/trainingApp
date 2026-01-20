@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>Загрузка протоколов</title>
+    <style>
+        /* Простейшие стили */
+        .upload-status {
+            display: none;
+            margin-bottom: 20px;
+        }
+        .upload-status.show {
+            display: block;
+        }
+        .progress {
+            height: 25px;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+
+    <div class="container-fluid">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h1 class="card-title">
+                    <i class="fas fa-file-pdf me-3"></i>Загрузка протоколов
+                </h1>
+                <p class="text-muted">Загрузите PDF-файл протокола проверки знаний</p>
+            </div>
+        </div>
+
+        <!-- Простейший статус -->
+        <div id="uploadStatus" class="upload-status">
+            <div class="alert alert-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        <span id="statusText">Загрузка файла...</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="hideStatus()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="progress mt-2">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                         style="width: 100%"></div>
+                </div>
+                <small class="text-muted mt-1 d-block" id="statusDetails">
+                    Пожалуйста, подождите, файл загружается...
+                </small>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-upload me-2"></i>Загрузить PDF
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Простая форма -->
+                        <form id="uploadForm" th:action="@{/admin/pdf/upload}" method="post" enctype="multipart/form-data">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                            <div class="mb-4">
+                                <label for="pdfFile" class="form-label fw-bold">PDF файл *</label>
+                                <input type="file" class="form-control" id="pdfFile" name="pdfFile"
+                                       accept=".pdf" required>
+                                <div class="form-text">Поддерживаются только PDF файлы, максимальный размер: 50MB</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="pdfType" class="form-label fw-bold">Тип протокола *</label>
+                                <select class="form-select" id="pdfType" name="pdfType" required>
+                                    <option value="">Выберите тип протокола...</option>
+                                    <option value="OCCUPATIONAL_SAFETY">Охрана труда</option>
+                                    <option value="INDUSTRIAL_SAFETY">Промышленная безопасность</option>
+                                </select>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Файл будет обработан с помощью OCR.
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a th:href="@{/admin/pdf/list}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Назад к списку
+                                </a>
+                                <button type="submit" class="btn btn-primary" onclick="return validateAndSubmit()">
+                                    <i class="fas fa-upload me-2"></i>Загрузить и обработать
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>Рекомендации
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-3">
+                                <i class="fas fa-check text-success me-2"></i>
+                                <strong>Качество сканов:</strong> 300 DPI минимум
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check text-success me-2"></i>
+                                <strong>Читаемый текст:</strong> Без размытия
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check text-success me-2"></i>
+                                <strong>Много протоколов:</strong> В одном PDF
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Глобальные переменные
+    let isUploading = false;
+
+    // Простейшая валидация
+    function validateAndSubmit() {
+        if (isUploading) {
+            return false;
+        }
+
+        const fileInput = document.getElementById('pdfFile');
+        const pdfType = document.getElementById('pdfType');
+
+        // Проверка файла
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert('Пожалуйста, выберите PDF файл');
+            return false;
+        }
+
+        const file = fileInput.files[0];
+
+        // Проверка расширения
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+            alert('Файл должен иметь расширение .pdf');
+            return false;
+        }
+
+        // Проверка размера (50MB)
+        if (file.size > 50 * 1024 * 1024) {
+            alert('Файл слишком большой. Максимальный размер: 50MB');
+            return false;
+        }
+
+        // Проверка типа протокола
+        if (!pdfType.value) {
+            alert('Пожалуйста, выберите тип протокола');
+            return false;
+        }
+
+        // Показываем статус
+        showStatus('Загрузка файла: ' + file.name);
+        isUploading = true;
+
+        // Меняем кнопку
+        const submitBtn = event.target;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Загрузка...';
+
+        // Форма отправится автоматически (стандартная отправка)
+        return true;
+    }
+
+    // Показать статус
+    function showStatus(message) {
+        const statusDiv = document.getElementById('uploadStatus');
+        const statusText = document.getElementById('statusText');
+
+        statusText.textContent = message;
+        statusDiv.classList.add('show');
+
+        console.log('Статус показан:', message);
+    }
+
+    // Скрыть статус
+    function hideStatus() {
+        const statusDiv = document.getElementById('uploadStatus');
+        statusDiv.classList.remove('show');
+        isUploading = false;
+
+        // Восстанавливаем кнопку
+        const submitBtn = document.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-upload me-2"></i>Загрузить и обработать';
+        }
+    }
+
+    // Автоматически скрыть статус через 30 секунд (на всякий случай)
+    setTimeout(function() {
+        const statusDiv = document.getElementById('uploadStatus');
+        if (statusDiv && statusDiv.classList.contains('show')) {
+            console.log('Автоматическое скрытие статуса (таймаут)');
+            hideStatus();
+            alert('Загрузка занимает слишком много времени. Пожалуйста, попробуйте еще раз.');
+        }
+    }, 30000);
+
+    // Простейший тест
+    window.testStatus = function() {
+        console.log('Тест: показываем статус');
+        showStatus('Тестовое сообщение');
+        setTimeout(hideStatus, 2000);
+    };
+
+    // Добавим тестовую кнопку в консоль
+    console.log('Для теста статуса выполните: testStatus()');
+</script>
+</body>
+</html>

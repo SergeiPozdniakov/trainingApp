@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+  <title>Загруженные протоколы</title>
+  <style>
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 3px 10px;
+    }
+    .status-pending { background-color: #ffc107; color: #000; }
+    .status-processing { background-color: #0dcaf0; color: #000; }
+    .status-needs_review { background-color: #fd7e14; color: #000; }
+    .status-processed { background-color: #198754; color: #fff; }
+    .status-error { background-color: #dc3545; color: #fff; }
+  </style>
+</head>
+<body>
+<div layout:fragment="content">
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h1 class="card-title mb-0">
+            <i class="fas fa-file-archive me-3"></i>Загруженные протоколы
+          </h1>
+          <p class="text-muted mb-0">История обработки PDF файлов</p>
+        </div>
+        <div>
+          <a th:href="@{/admin/pdf/upload}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Загрузить новый
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Файл</th>
+            <th>Тип</th>
+            <th>Статус</th>
+            <th>Страниц</th>
+            <th>Дата загрузки</th>
+            <th>Дата обработки</th>
+            <th>Действия</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="doc : ${documents}">
+            <td th:text="${doc.id}"></td>
+            <td>
+              <i class="fas fa-file-pdf text-danger me-2"></i>
+              <span th:text="${doc.originalFilename}"></span>
+            </td>
+            <td>
+                            <span th:if="${doc.type == 'OCCUPATIONAL_SAFETY'}"
+                                  class="badge bg-info">Охрана труда</span>
+              <span th:if="${doc.type == 'INDUSTRIAL_SAFETY'}"
+                    class="badge bg-warning">Пром. безопасность</span>
+            </td>
+            <td>
+                            <span class="status-badge" th:classappend="'status-' + ${doc.status.toString().toLowerCase()}"
+                                  th:text="${#strings.capitalize(#strings.replace(doc.status.toString(), '_', ' '))}"></span>
+            </td>
+            <td th:text="${doc.pageCount}"></td>
+            <td th:text="${#temporals.format(doc.uploadedAt, 'dd.MM.yyyy HH:mm')}"></td>
+            <td>
+                            <span th:if="${doc.processedAt}"
+                                  th:text="${#temporals.format(doc.processedAt, 'dd.MM.yyyy HH:mm')}"></span>
+              <span th:unless="${doc.processedAt}" class="text-muted">—</span>
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group">
+                <a th:href="@{/admin/pdf/process/} + ${doc.id}"
+                   class="btn btn-outline-primary"
+                   th:if="${doc.status == 'PENDING'}">
+                  <i class="fas fa-cog"></i>
+                </a>
+                <a th:href="@{/admin/pdf/parse/} + ${doc.id}"
+                   class="btn btn-outline-info"
+                   th:if="${doc.status == 'NEEDS_REVIEW'}">
+                  <i class="fas fa-check-circle"></i>
+                </a>
+                <a th:href="@{/admin/pdf/view-text/} + ${doc.id}"
+                   class="btn btn-outline-secondary">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          <tr th:if="${documents.isEmpty()}">
+            <td colspan="8" class="text-center py-5">
+              <i class="fas fa-file-pdf fa-4x text-muted mb-3"></i>
+              <h5 class="text-muted">Нет загруженных протоколов</h5>
+              <p class="text-muted">Загрузите первый PDF файл</p>
+              <a th:href="@{/admin/pdf/upload}" class="btn btn-primary">
+                <i class="fas fa-upload me-2"></i>Загрузить PDF
+              </a>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

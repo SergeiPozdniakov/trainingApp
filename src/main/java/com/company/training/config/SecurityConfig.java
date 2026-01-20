@@ -32,6 +32,14 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/error"
                         ).permitAll()
+                        .requestMatchers(
+                                "/admin/pdf/upload",
+                                "/admin/pdf/list",
+                                "/admin/pdf/process/**",
+                                "/admin/pdf/parse/**",
+                                "/admin/pdf/save/**",
+                                "/admin/pdf/view-text/**"
+                        ).hasRole("ADMIN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

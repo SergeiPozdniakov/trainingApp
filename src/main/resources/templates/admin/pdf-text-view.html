@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+  <title>OCR текст</title>
+  <style>
+    .ocr-text {
+        white-space: pre-wrap;
+        word-break: break-all;
+        font-family: monospace;
+        padding: 15px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        max-height: 600px;
+        overflow: auto;
+        line-height: 1.5;
+    }
+    .page-break {
+        display: block;
+        border-bottom: 1px dashed #ccc;
+        margin: 15px 0;
+    }
+    .page-number {
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+<div layout:fragment="content">
+  <div class="container mt-4">
+    <h1>OCR текст</h1>
+    <div class="card">
+      <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong th:text="${document.originalFilename}"></strong>
+            <span class="badge bg-info ms-2" th:text="${document.pageCount} + ' стр.'"></span>
+          </div>
+          <div>
+            <a th:href="@{/admin/pdf/list}" class="btn btn-sm btn-outline-secondary">
+              <i class="fas fa-arrow-left me-1"></i>Назад к списку
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="ocr-text">
+          <div th:each="page, iter : ${pages}">
+            <div class="page-number">Страница [[${iter.count}]] из [[${pages.size()}]]</div>
+            <div th:text="${page}"></div>
+            <div class="page-break"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -21,6 +21,12 @@ public class TestController {
         } catch (Exception e) {
             return "Ошибка: " + e.getMessage();
         }
+
+    }
+
+    @GetMapping("/test/pdf-processing")
+    public String testPdfProcessing() {
+        return "redirect:/admin/pdf/upload";
     }
 
     @GetMapping("/api/test/date")
