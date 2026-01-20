@@ -1,6 +1,7 @@
 package com.company.training.controller;
 
 import com.company.training.dto.ParsedProtocolRecord;
+import com.company.training.dto.ParsedProtocolRecordWrapper;
 import com.company.training.dto.ProtocolValidationResult;
 import com.company.training.entity.PdfDocument;
 import com.company.training.service.PdfProcessingService;
@@ -118,15 +119,30 @@ public class PdfUploadController {
      */
     @PostMapping("/save/{id}")
     public String saveRecords(@PathVariable Long id,
-                              @ModelAttribute("records") List<ParsedProtocolRecord> records,
+                              @ModelAttribute("wrapper") ParsedProtocolRecordWrapper wrapper,
                               RedirectAttributes redirectAttributes) {
         try {
+            List<ParsedProtocolRecord> records = wrapper.getRecords();
+
+            if (records == null || records.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "Нет данных для сохранения");
+                return "redirect:/admin/pdf/parse/" + id;
+            }
+
             // Проверяем, что для всех записей выбрано направление
             List<String> missingDirections = new ArrayList<>();
+            List<ParsedProtocolRecord> validRecords = new ArrayList<>();
+
             for (int i = 0; i < records.size(); i++) {
                 ParsedProtocolRecord record = records.get(i);
-                if (record != null && record.getSelectedDirectionId() == null) {
-                    missingDirections.add("Запись #" + (i + 1) + ": " + record.getFullName());
+
+                // Проверяем, выбрана ли запись (checkbox)
+                if (record != null && record.isValid()) {
+                    if (record.getSelectedDirectionId() == null) {
+                        missingDirections.add("Запись #" + (i + 1) + ": " + record.getFullName());
+                    } else {
+                        validRecords.add(record);
+                    }
                 }
             }
 
@@ -137,7 +153,13 @@ public class PdfUploadController {
                 return "redirect:/admin/pdf/parse/" + id;
             }
 
-            ProtocolValidationResult result = pdfProcessingService.saveConfirmedRecords(records, id);
+            if (validRecords.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error",
+                        "Не выбрано ни одной записи для сохранения");
+                return "redirect:/admin/pdf/parse/" + id;
+            }
+
+            ProtocolValidationResult result = pdfProcessingService.saveConfirmedRecords(validRecords, id);
 
             redirectAttributes.addFlashAttribute("success",
                     String.format("Сохранено %d из %d записей.",

@@ -108,7 +108,8 @@
                                 <input type="checkbox"
                                        class="record-checkbox"
                                        th:checked="${record.valid != false}"
-                                       th:id="'chk_' + ${stat.index}">
+                                       th:id="'chk_' + ${stat.index}"
+                                       th:data-index="${stat.index}">
                             </td>
                             <td th:text="${stat.count}">1</td>
                             <td>
@@ -150,10 +151,11 @@
                                 </div>
 
                                 <!-- Выбор направления из списка -->
-                                <select th:name="'records[' + ${stat.index} + '].selectedDirectionId'"
-                                        class="form-control form-control-sm mt-1"
+                                <select th:name="records[__${stat.index}__].selectedDirectionId"
+                                        class="form-control form-control-sm mt-1 direction-select"
                                         th:required="true"
-                                        th:id="'dir_' + ${stat.index}">
+                                        th:id="'dir_' + ${stat.index}"
+                                        th:data-index="${stat.index}">
                                     <option value="">-- ВЫБЕРИТЕ НАПРАВЛЕНИЕ --</option>
 
                                     <!-- Автоматически подобранное направление -->
@@ -163,7 +165,7 @@
                                                 th:value="${dir.id}"
                                                 th:title="${dir.description}"
                                                 th:text="${dir.name}"
-                                                th:selected="true">
+                                                th:selected="${record.selectedDirectionId == dir.id}">
                                         </option>
                                     </optgroup>
 
@@ -173,7 +175,7 @@
                                                 th:value="${dir.id}"
                                                 th:title="${dir.description}"
                                                 th:text="${dir.name}"
-                                                th:selected="${record.matchedDirectionId != null and record.matchedDirectionId == dir.id}">
+                                                th:selected="${record.selectedDirectionId == dir.id}">
                                         </option>
                                     </optgroup>
                                 </select>
@@ -194,21 +196,29 @@
 
                 <!-- Скрытые поля -->
                 <div th:each="record, stat : ${records}">
-                    <input type="hidden" th:name="'records[' + ${stat.index} + '].id'"
+                    <!-- Индекс записи -->
+                    <input type="hidden" th:name="records[__${stat.index}__].__index" th:value="${stat.index}">
+
+                    <!-- Основные поля -->
+                    <input type="hidden" th:name="records[__${stat.index}__].id"
                            th:value="${record.id}">
-                    <input type="hidden" th:name="'records[' + ${stat.index} + '].fullName'"
+                    <input type="hidden" th:name="records[__${stat.index}__].fullName"
                            th:value="${record.fullName}">
-                    <input type="hidden" th:name="'records[' + ${stat.index} + '].examDate'"
+                    <input type="hidden" th:name="records[__${stat.index}__].examDate"
                            th:value="${#temporals.format(record.examDate, 'yyyy-MM-dd')}">
-                    <input type="hidden" th:name="'records[' + ${stat.index} + '].registrationNumber'"
+                    <input type="hidden" th:name="records[__${stat.index}__].registrationNumber"
                            th:value="${record.registrationNumber}">
-                    <input type="hidden" th:name="'records[' + ${stat.index} + '].matchedEmployeeId'"
+                    <input type="hidden" th:name="records[__${stat.index}__].matchedEmployeeId"
                            th:value="${record.matchedEmployeeId}">
-                    <input type="hidden" th:name="'records[' + ${stat.index} + '].matchedDirectionId'"
+                    <input type="hidden" th:name="records[__${stat.index}__].matchedDirectionId"
                            th:value="${record.matchedDirectionId}">
-                    <input type="hidden" th:name="'records[' + ${stat.index} + '].pdfDocumentId'"
+                    <input type="hidden" th:name="records[__${stat.index}__].pdfDocumentId"
                            th:value="${record.pdfDocumentId}">
-                    <input type="hidden" th:name="'records[' + ${stat.index} + '].valid'"
+                    <input type="hidden" th:name="records[__${stat.index}__].pageNumber"
+                           th:value="${record.pageNumber}">
+
+                    <!-- Поле для валидации (обновляется через JS) -->
+                    <input type="hidden" th:name="records[__${stat.index}__].valid"
                            th:value="${record.valid != false}"
                            th:id="'valid_' + ${stat.index}">
                 </div>
@@ -255,14 +265,14 @@
     }
 
     function updateRowState(checkbox) {
-        const row = checkbox.closest('tr');
-        const validInput = row.querySelector('input[id^="valid_"]');
+        const index = checkbox.getAttribute('data-index');
+        const validInput = document.getElementById('valid_' + index);
         if (validInput) {
             validInput.value = checkbox.checked;
         }
 
         // Подсветка обязательного поля направления
-        const select = row.querySelector('select[id^="dir_"]');
+        const select = document.getElementById('dir_' + index);
         if (select) {
             if (checkbox.checked && !select.value) {
                 select.classList.add('is-invalid');
@@ -297,13 +307,15 @@
         });
 
         // Обработчики для select направлений
-        const selects = document.querySelectorAll('select[id^="dir_"]');
+        const selects = document.querySelectorAll('.direction-select');
         selects.forEach(select => {
+            const index = select.getAttribute('data-index');
+
             select.addEventListener('change', function() {
                 if (this.value) {
                     this.classList.remove('is-invalid');
                 } else {
-                    const checkbox = this.closest('tr').querySelector('.record-checkbox');
+                    const checkbox = document.getElementById('chk_' + index);
                     if (checkbox && checkbox.checked) {
                         this.classList.add('is-invalid');
                     }
@@ -329,20 +341,30 @@
             const emptyRecords = [];
 
             checkedCheckboxes.forEach(checkbox => {
+                const index = checkbox.getAttribute('data-index');
+                const select = document.getElementById('dir_' + index);
                 const row = checkbox.closest('tr');
-                const select = row.querySelector('select[id^="dir_"]');
+
                 if (select && !select.value) {
                     hasEmptyDirections = true;
                     select.classList.add('is-invalid');
-                    emptyRecords.push(row.cells[3].textContent.trim());
+                    // Получаем ФИО из второй ячейки строки (ячейка с индексом 3, т.к. отсчет с 0)
+                    const nameCell = row.cells[3];
+                    if (nameCell) {
+                        // Берем текст из элемента strong (ФИО)
+                        const strongElement = nameCell.querySelector('strong');
+                        const fullName = strongElement ? strongElement.textContent.trim() : nameCell.textContent.trim();
+                        emptyRecords.push(fullName);
+                    }
                 }
             });
 
             if (hasEmptyDirections) {
                 e.preventDefault();
-                alert('Для всех выбранных записей необходимо указать направление обучения!\n\n' +
+                const errorMessage = 'Для всех выбранных записей необходимо указать направление обучения!\n\n' +
                       'Не указано направление для:\n' + emptyRecords.slice(0, 5).join('\n') +
-                      (emptyRecords.length > 5 ? '\n...и еще ' + (emptyRecords.length - 5) : ''));
+                      (emptyRecords.length > 5 ? '\n...и еще ' + (emptyRecords.length - 5) + ' записей' : '');
+                alert(errorMessage);
                 return false;
             }
 

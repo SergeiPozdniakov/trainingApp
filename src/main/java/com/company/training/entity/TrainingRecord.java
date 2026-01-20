@@ -25,20 +25,25 @@ public class TrainingRecord {
     @Column(name = "protocol_number")
     private String protocolNumber;
 
-    @Column(name = "file_path")
-    private String filePath;
-
+    // Храним только имя файла, путь вычисляем
     @Column(name = "file_name")
     private String fileName;
+
+    // Путь к файлу относительно директории протоколов
+    @Column(name = "file_path")
+    private String filePath;
 
     private Boolean applicable;
 
     @Column(name = "created_at")
     private LocalDate createdAt;
 
-    // УБРАЛИ @Formula и сделаем вычисление в геттере
-    @Transient // Это поле не сохраняется в БД, вычисляется на лету
+    @Transient
     private LocalDate nextExamDate;
+
+    // Новое поле: номер страницы в исходном PDF
+    @Column(name = "source_page_number")
+    private Integer sourcePageNumber;
 
     // Конструкторы
     public TrainingRecord() {}
@@ -74,17 +79,29 @@ public class TrainingRecord {
     public String getProtocolNumber() { return protocolNumber; }
     public void setProtocolNumber(String protocolNumber) { this.protocolNumber = protocolNumber; }
 
-    public String getFilePath() { return filePath; }
-    public void setFilePath(String filePath) { this.filePath = filePath; }
-
     public String getFileName() { return fileName; }
     public void setFileName(String fileName) { this.fileName = fileName; }
+
+    public String getFilePath() { return filePath; }
+    public void setFilePath(String filePath) { this.filePath = filePath; }
 
     public Boolean getApplicable() { return applicable; }
     public void setApplicable(Boolean applicable) { this.applicable = applicable; }
 
     public LocalDate getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDate createdAt) { this.createdAt = createdAt; }
+
+    public Integer getSourcePageNumber() { return sourcePageNumber; }
+    public void setSourcePageNumber(Integer sourcePageNumber) { this.sourcePageNumber = sourcePageNumber; }
+
+    // Метод для получения полного пути к файлу
+    public String getFullFilePath() {
+        if (filePath == null) return null;
+        return "uploads/protocols/" + filePath;
+    }
+
+
+
 
     public boolean isExpiringSoon() {
         LocalDate nextExamDate = getNextExamDate();

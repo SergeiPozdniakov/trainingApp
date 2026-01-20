@@ -4,7 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4a592b20-1a11-44e2-b17e-821e3669abe2" name="Changes" comment="" />
+    <list default="true" id="e474782d-5848-4923-8ec0-e8c494d37d04" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/company/training/controller/PdfUploadController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/company/training/controller/PdfUploadController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/company/training/entity/TrainingRecord.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/company/training/entity/TrainingRecord.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/company/training/repository/TrainingRecordRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/company/training/repository/TrainingRecordRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/company/training/service/PdfProcessingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/company/training/service/PdfProcessingService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/company/training/service/TrainingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/company/training/service/TrainingService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/admin/pdf-validate.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/templates/admin/pdf-validate.html" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -15,60 +28,50 @@
       <ProjectState />
     </projectState>
   </component>
-  <component name="ExternalProjectsManager">
-    <system id="GRADLE">
-      <state>
-        <task path="$PROJECT_DIR$">
-          <activation />
-        </task>
-        <projects_view />
-      </state>
-    </system>
-  </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="HTML File" />
         <option value="Class" />
       </list>
     </option>
   </component>
-  <component name="ProjectColorInfo">{
-  &quot;customColor&quot;: &quot;&quot;,
-  &quot;associatedIndex&quot;: 3
-}</component>
-  <component name="ProjectId" id="38FtM3DpxuCMCciJjNSNVmdtNpC" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "SergeiPozdniakov"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/SergeiPozdniakov/trainingApp.git",
+    "accountId": "d64edbb5-e445-4922-ba49-c799191ebd5e"
+  }
+}]]></component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 3
+}]]></component>
+  <component name="ProjectId" id="38X2fZhANnhcr2lsNOpEmLaNz3i" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
-    &quot;Gradle.Build trainingApp.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.QuickTrainingRequestTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.SimpleDocxTemplateTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.TrainingRequestGenerationTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.TrainingRequestServiceStandaloneTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.TrainingRequestServiceTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.TrainingRequestTemplateTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.trainingApp [:com.company.training.TrainingManagementApplication.main()].executor&quot;: &quot;Run&quot;,
-    &quot;JUnit.QuickTrainingRequestTest.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Gradle.trainingApp [:com.company.training.TrainingManagementApplication.main()].executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true"
   }
-}</component>
-  <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\test\trainingApp\src\main\resources\templates\admin" />
-      <recent name="C:\test\trainingApp\src\main\resources\templates\admin\pdf" />
-      <recent name="C:\test\trainingApp\src\main\resources\templates" />
-    </key>
-    <key name="ExtractSuperBase.RECENT_KEYS">
-      <recent name="com.company.training.config" />
-    </key>
-  </component>
-  <component name="RunManager" selected="Application.TrainingManagementApplication">
+}]]></component>
+  <component name="RunManager">
     <configuration name="TrainingManagementApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="com.company.training.TrainingManagementApplication" />
       <module name="training.main" />
@@ -82,111 +85,20 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="QuickTrainingRequestTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value=":test" />
-            <option value="--tests" />
-            <option value="&quot;QuickTrainingRequestTest&quot;" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="TrainingRequestServiceStandaloneTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value=":test" />
-            <option value="--tests" />
-            <option value="&quot;TrainingRequestServiceStandaloneTest&quot;" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="TrainingRequestServiceTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value=":test" />
-            <option value="--tests" />
-            <option value="&quot;TrainingRequestServiceTest&quot;" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="QuickTrainingRequestTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <module name="training.main" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="com.company.training.service.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <option name="PACKAGE_NAME" value="com.company.training.service" />
-      <option name="MAIN_CLASS_NAME" value="com.company.training.service.QuickTrainingRequestTest" />
-      <option name="TEST_OBJECT" value="class" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.TrainingRequestServiceTest" />
-        <item itemvalue="Gradle.TrainingRequestServiceStandaloneTest" />
         <item itemvalue="Application.TrainingManagementApplication" />
-        <item itemvalue="Gradle.QuickTrainingRequestTest" />
-        <item itemvalue="JUnit.QuickTrainingRequestTest" />
       </list>
     </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="4a592b20-1a11-44e2-b17e-821e3669abe2" name="Changes" comment="" />
-      <created>1768407096509</created>
+      <changelist id="e474782d-5848-4923-8ec0-e8c494d37d04" name="Changes" comment="" />
+      <created>1768931700936</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1768407096509</updated>
+      <updated>1768931700936</updated>
     </task>
     <servers />
   </component>

@@ -9,7 +9,9 @@ import com.company.training.repository.TrainingDirectionRepository;
 import jakarta.transaction.Transactional;
 import net.sourceforge.tess4j.Tesseract;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +30,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 public class PdfProcessingService {
     private static final Logger logger = LoggerFactory.getLogger(PdfProcessingService.class);
     private final Path pdfStorageLocation;
+    private final Path protocolStorageLocation;
 
     @Autowired
     private PdfDocumentRepository pdfDocumentRepository;
@@ -62,16 +64,20 @@ public class PdfProcessingService {
     private static final Pattern DATE_PATTERN = Pattern.compile("(\\d{1,2}\\.\\d{1,2}\\.\\d{4})");
     private static final Pattern REG_NUM_PATTERN = Pattern.compile("\\b(\\d{4,15})\\b");
     private static final Pattern RUSSIAN_NAME_PATTERN = Pattern.compile("[А-ЯЁ][а-яё]+\\s+[А-ЯЁ][а-яё]+\\s+[А-ЯЁ][а-яё]+");
-    private static final Pattern PAGE_HEADER_PATTERN = Pattern.compile("===\\s*Страница\\s+(\\d+)\\s*===");
+    private static final Pattern PAGE_NUMBER_PATTERN = Pattern.compile("=== Страница (\\d+) ===");
 
     public PdfProcessingService() {
         this.pdfStorageLocation = Paths.get("uploads/pdf-protocols").toAbsolutePath().normalize();
+        this.protocolStorageLocation = Paths.get("uploads/protocols").toAbsolutePath().normalize();
+
         try {
             Files.createDirectories(this.pdfStorageLocation);
-            logger.info("Директория для PDF создана: {}", this.pdfStorageLocation);
+            Files.createDirectories(this.protocolStorageLocation);
+            logger.info("Директории созданы: PDF={}, Protocols={}",
+                    this.pdfStorageLocation, this.protocolStorageLocation);
         } catch (Exception ex) {
-            logger.error("Не удалось создать директорию для PDF", ex);
-            throw new RuntimeException("Не удалось создать директорию для PDF", ex);
+            logger.error("Не удалось создать директории", ex);
+            throw new RuntimeException("Не удалось создать директории", ex);
         }
 
         // Инициализация Tesseract
@@ -108,7 +114,7 @@ public class PdfProcessingService {
     }
 
     /**
-     * OCR распознавание PDF - ИСПРАВЛЕНО: правильная нумерация страниц
+     * OCR распознавание PDF
      */
     public PdfDocument processOcr(Long pdfDocumentId) throws Exception {
         PdfDocument pdfDocument = pdfDocumentRepository.findById(pdfDocumentId)
@@ -126,7 +132,6 @@ public class PdfProcessingService {
                 logger.info("Обработка страницы {} из {}", i + 1, document.getNumberOfPages());
                 BufferedImage image = renderer.renderImageWithDPI(i, 400);
                 String pageText = tesseract.doOCR(image);
-                // ИСПРАВЛЕНО: используем i+1 для правильной нумерации страниц
                 ocrText.append("=== Страница ").append(i + 1).append(" ===\n");
                 ocrText.append(pageText).append("\n");
             }
@@ -144,9 +149,203 @@ public class PdfProcessingService {
     }
 
     /**
+     * Извлекает отдельную страницу из PDF и сохраняет как отдельный файл
+     */
+    private String extractSinglePageFromPdf(File sourcePdf, int pageNumber,
+                                            Long employeeId, Long directionId,
+                                            LocalDate examDate) throws IOException {
+
+        try (PDDocument sourceDoc = Loader.loadPDF(sourcePdf)) {
+            if (pageNumber < 1 || pageNumber > sourceDoc.getNumberOfPages()) {
+                throw new IllegalArgumentException("Неверный номер страницы: " + pageNumber);
+            }
+
+            // Создаем новый документ с одной страницей
+            try (PDDocument singlePageDoc = new PDDocument()) {
+                // Получаем нужную страницу (индексация с 0)
+                PDPage page = sourceDoc.getPage(pageNumber - 1);
+                singlePageDoc.addPage(page);
+
+                // Генерируем имя файла
+                String fileName = String.format("protocol_%d_%d_%s_page%d.pdf",
+                        employeeId,
+                        directionId,
+                        examDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                        pageNumber);
+
+                Path outputPath = this.protocolStorageLocation.resolve(fileName);
+                singlePageDoc.save(outputPath.toFile());
+
+                logger.info("Страница {} извлечена в файл: {}", pageNumber, fileName);
+                return fileName;
+            }
+        }
+    }
+
+    /**
+     * УЛУЧШЕННЫЙ метод сохранения записей с извлечением отдельных страниц
+     */
+    @Transactional
+    public ProtocolValidationResult saveConfirmedRecords(List<ParsedProtocolRecord> records, Long pdfDocumentId) {
+        PdfDocument pdfDocument = pdfDocumentRepository.findById(pdfDocumentId)
+                .orElseThrow(() -> new RuntimeException("PDF документ не найден"));
+
+        int savedRecords = 0;
+        List<String> errors = new ArrayList<>();
+        List<String> successes = new ArrayList<>();
+        File sourceFile = new File(pdfDocument.getFilePath());
+
+        for (ParsedProtocolRecord record : records) {
+            if (record == null || !record.isValid()) {
+                continue;
+            }
+
+            try {
+                // 1. Находим сотрудника
+                if (record.getMatchedEmployeeId() == null) {
+                    errors.add("Сотрудник не указан для записи: " + record.getFullName());
+                    continue;
+                }
+
+                Employee employee;
+                try {
+                    employee = employeeRepository.findById(record.getMatchedEmployeeId())
+                            .orElseThrow(() -> new RuntimeException("Сотрудник не найден в БД"));
+                } catch (Exception e) {
+                    errors.add("Сотрудник не найден (ID: " + record.getMatchedEmployeeId() + "): " + e.getMessage());
+                    continue;
+                }
+
+                // 2. Находим направление обучения
+                TrainingDirection direction;
+                Long directionId = record.getSelectedDirectionId();
+
+                if (directionId == null) {
+                    errors.add("Направление не указано для " + record.getFullName());
+                    continue;
+                }
+
+                try {
+                    direction = trainingDirectionRepository.findById(directionId)
+                            .orElseThrow(() -> new RuntimeException("Направление не найдено"));
+                } catch (Exception e) {
+                    errors.add("Направление не найдено (ID: " + directionId + ") для " + record.getFullName() + ": " + e.getMessage());
+                    continue;
+                }
+
+                // 3. Проверяем номер страницы
+                if (record.getPageNumber() == null) {
+                    errors.add("Номер страницы не указан для " + record.getFullName());
+                    continue;
+                }
+
+                // 4. Проверяем, существует ли уже такая запись об обучении
+                TrainingRecord existingRecord = trainingService.getTrainingRecord(
+                        employee.getId(), direction.getId());
+
+                if (existingRecord != null) {
+                    // 4a. Удаляем старый файл протокола, если он существует
+                    if (existingRecord.getFilePath() != null) {
+                        try {
+                            Path oldFilePath = this.protocolStorageLocation.resolve(existingRecord.getFilePath());
+                            Files.deleteIfExists(oldFilePath);
+                            logger.info("Удален старый файл протокола: {}", existingRecord.getFilePath());
+                        } catch (IOException e) {
+                            logger.warn("Не удалось удалить старый файл: {}", e.getMessage());
+                        }
+                    }
+
+                    // 4b. Извлекаем новую страницу как отдельный файл
+                    String protocolFileName = extractSinglePageFromPdf(
+                            sourceFile,
+                            record.getPageNumber(),
+                            employee.getId(),
+                            direction.getId(),
+                            record.getExamDate());
+
+                    // 4c. Обновляем существующую запись
+                    existingRecord.setExamDate(record.getExamDate());
+                    existingRecord.setProtocolNumber(record.getRegistrationNumber());
+                    existingRecord.setApplicable(true);
+                    existingRecord.setFileName(record.getFullName() + " - " + direction.getName());
+                    existingRecord.setFilePath(protocolFileName);
+
+                    trainingService.saveTrainingRecordWithoutFile(existingRecord);
+                    successes.add("Обновлена запись для " + employee.getFullName() +
+                            " по направлению " + direction.getName() +
+                            " (страница " + record.getPageNumber() + ")");
+                } else {
+                    // 5. Создаем новую запись с извлеченной страницей
+                    TrainingRecord trainingRecord = new TrainingRecord();
+                    trainingRecord.setEmployee(employee);
+                    trainingRecord.setTrainingDirection(direction);
+                    trainingRecord.setExamDate(record.getExamDate());
+                    trainingRecord.setProtocolNumber(record.getRegistrationNumber());
+                    trainingRecord.setApplicable(true);
+
+                    // Извлекаем страницу как отдельный файл
+                    String protocolFileName = extractSinglePageFromPdf(
+                            sourceFile,
+                            record.getPageNumber(),
+                            employee.getId(),
+                            direction.getId(),
+                            record.getExamDate());
+
+                    trainingRecord.setFileName(record.getFullName() + " - " + direction.getName());
+                    trainingRecord.setFilePath(protocolFileName);
+
+                    trainingService.saveTrainingRecordWithoutFile(trainingRecord);
+                    successes.add("Создана новая запись для " + employee.getFullName() +
+                            " по направлению " + direction.getName() +
+                            " (страница " + record.getPageNumber() + ")");
+                }
+
+                savedRecords++;
+
+            } catch (Exception e) {
+                String errorMsg = String.format("Ошибка при сохранении записи для %s (страница %d): %s",
+                        record.getFullName(), record.getPageNumber(), e.getMessage());
+                logger.error(errorMsg, e);
+                errors.add(errorMsg);
+            }
+        }
+
+        // Обновляем статус PDF документа
+        pdfDocument.setStatus(PdfDocument.ProcessingStatus.PROCESSED);
+
+        StringBuilder processingResult = new StringBuilder();
+        processingResult.append(String.format(
+                "Обработано %d записей из %d", savedRecords, records.size()));
+
+        if (!successes.isEmpty()) {
+            processingResult.append(". Успешно: ").append(String.join("; ",
+                    successes.subList(0, Math.min(successes.size(), 3))));
+        }
+
+        if (!errors.isEmpty()) {
+            processingResult.append(". Ошибки: ").append(String.join("; ",
+                    errors.subList(0, Math.min(errors.size(), 3))));
+            if (errors.size() > 3) {
+                processingResult.append(" и еще ").append(errors.size() - 3).append(" ошибок");
+            }
+        }
+
+        pdfDocument.setProcessingResult(processingResult.toString());
+        pdfDocumentRepository.save(pdfDocument);
+
+        ProtocolValidationResult result = new ProtocolValidationResult();
+        result.setPdfDocumentId(pdfDocumentId);
+        result.setTotalRecords(records.size());
+        result.setValidRecords(savedRecords);
+        result.setAllValid(savedRecords == records.size());
+        result.setErrors(errors);
+        result.setSuccesses(successes);
+        return result;
+    }
+
+    /**
      * УЛУЧШЕННЫЙ алгоритм парсинга протоколов по охране труда
      * Обрабатывает КАЖДУЮ страницу как отдельный протокол
-     * ИСПРАВЛЕНО: правильная обработка номеров страниц
      */
     public List<ParsedProtocolRecord> parseOccupationalSafetyProtocol(String ocrText, Long pdfDocumentId) {
         logger.info("=== Начинаем УЛУЧШЕННЫЙ алгоритм парсинга протокола ===");
@@ -158,15 +357,12 @@ public class PdfProcessingService {
         logger.info("Загружено направлений из БД: {}", allDirections.size());
         logger.info("Загружено сотрудников из БД: {}", allEmployees.size());
 
-        // Карта для быстрого поиска сотрудников по нормализованному ФИО
+        // Карта для быстрого поиска сотрудников
         Map<String, Employee> employeeMap = new HashMap<>();
         for (Employee emp : allEmployees) {
             if (emp.getFullName() != null) {
-                // Добавляем несколько вариантов для поиска
                 String normalizedFullName = normalizeForSearch(emp.getFullName());
                 employeeMap.put(normalizedFullName, emp);
-
-                // Добавляем вариант без отчества (если есть)
                 String[] nameParts = emp.getFullName().split("\\s+");
                 if (nameParts.length >= 2) {
                     String lastNameFirstName = normalizeForSearch(nameParts[0] + " " + nameParts[1]);
@@ -175,112 +371,93 @@ public class PdfProcessingService {
             }
         }
 
-        // Извлекаем все номера страниц из текста
-        List<Integer> pageNumbers = new ArrayList<>();
-        List<String> pageContents = new ArrayList<>();
+        // 🔴 ИСПРАВЛЕНИЕ: Используем простой и надежный подход со split
+        String[] pageSections = ocrText.split("=== Страница \\d+ ===");
+        logger.info("Разделили текст на {} секций", pageSections.length);
 
-        Matcher headerMatcher = PAGE_HEADER_PATTERN.matcher(ocrText);
-        while (headerMatcher.find()) {
-            pageNumbers.add(Integer.parseInt(headerMatcher.group(1)));
-        }
+        // Отладочная информация
+        logger.debug("Первая секция (до первой страницы):\n{}",
+                pageSections[0].substring(0, Math.min(100, pageSections[0].length())));
 
-        // Разделяем текст на страницы по заголовкам
-        String[] rawPages = PAGE_HEADER_PATTERN.split(ocrText);
+        // 🔴 ВАЖНО: pageSections[0] - это текст ДО первой страницы (может быть пустой или содержать метаданные)
+        // Начинаем с 1, так как первая реальная страница в pageSections[1]
+        for (int sectionIndex = 1; sectionIndex < pageSections.length; sectionIndex++) {
+            String pageText = pageSections[sectionIndex].trim();
+            int pageNumber = sectionIndex; // Номер страницы равен индексу в массиве
 
-        // Первая часть обычно пустая или содержит текст до первого заголовка страницы
-        int startIndex = 0;
-        if (rawPages.length > 0 && (rawPages[0] == null || rawPages[0].trim().isEmpty())) {
-            startIndex = 1;
-        }
-
-        logger.info("Найдено {} заголовков страниц и {} частей текста", pageNumbers.size(), rawPages.length);
-
-        // Обрабатываем каждую страницу с правильным номером
-        for (int i = 0; i < pageNumbers.size(); i++) {
-            if (startIndex + i >= rawPages.length) {
-                logger.warn("Нет содержимого для страницы номер {}", pageNumbers.get(i));
-                continue;
-            }
-
-            int actualPageNumber = pageNumbers.get(i);
-            String pageText = rawPages[startIndex + i].trim();
+            logger.info("--- Обработка страницы {} (индекс {}) ---", pageNumber, sectionIndex);
+            logger.debug("Текст страницы (первые 200 символов):\n{}",
+                    pageText.substring(0, Math.min(200, pageText.length())));
 
             if (pageText.isEmpty()) {
-                logger.info("Страница {} пустая, пропускаем", actualPageNumber);
+                logger.info("Страница {} пустая, пропускаем", pageNumber);
                 continue;
             }
 
-            logger.info("--- Обработка страницы {} ---", actualPageNumber);
-
             try {
-                // 1. Ищем сотрудника на странице (улучшенный поиск)
+                // 1. Ищем сотрудника на странице
                 Employee employee = findEmployeeOnPage(pageText, employeeMap, allEmployees);
                 if (employee == null) {
-                    logger.warn("На странице {} не найден сотрудник", actualPageNumber);
-                    // Пытаемся найти по фамилии
+                    logger.warn("На странице {} не найден сотрудник", pageNumber);
                     employee = findEmployeeBySurname(pageText, allEmployees);
                     if (employee == null) {
-                        logger.error("Не удалось найти сотрудника на странице {}", actualPageNumber);
+                        logger.error("Не удалось найти сотрудника на странице {}", pageNumber);
                         continue;
                     }
                 }
-                logger.info("На странице {} найден сотрудник: {}", actualPageNumber, employee.getFullName());
+                logger.info("На странице {} найден сотрудник: {}", pageNumber, employee.getFullName());
 
-                // 2. Ищем дату экзамена (берем первую найденную дату)
+                // 2. Ищем дату экзамена
                 LocalDate examDate = extractExamDateFromPage(pageText);
                 if (examDate == null) {
-                    logger.warn("На странице {} не найдена дата экзамена", actualPageNumber);
-                    // Пробуем найти любую дату
+                    logger.warn("На странице {} не найдена дата экзамена", pageNumber);
                     List<LocalDate> allDates = extractAllDates(pageText);
                     if (!allDates.isEmpty()) {
                         examDate = allDates.get(0);
                         logger.info("Используем первую найденную дату: {}", examDate);
                     } else {
-                        logger.error("На странице {} нет ни одной даты", actualPageNumber);
+                        logger.error("На странице {} нет ни одной даты", pageNumber);
                         continue;
                     }
                 }
-                logger.info("Дата экзамена на странице {}: {}", actualPageNumber, examDate);
+                logger.info("Дата экзамена на странице {}: {}", pageNumber, examDate);
 
                 // 3. Ищем номер протокола
                 String protocolNumber = extractProtocolNumberFromPage(pageText);
-                logger.info("Номер протокола на странице {}: {}", actualPageNumber, protocolNumber);
+                logger.info("Номер протокола на странице {}: {}", pageNumber, protocolNumber);
 
                 // 4. Определяем программу обучения
                 TrainingDirection direction = determineTrainingDirection(pageText, allDirections);
                 if (direction != null) {
-                    logger.info("Программа на странице {}: {} ({})",
-                            actualPageNumber, direction.getName(),
-                            direction.getDescription() != null ?
-                                    direction.getDescription().substring(0, Math.min(50, direction.getDescription().length())) + "..." : "без описания");
+                    logger.info("Программа на странице {}: {}", pageNumber, direction.getName());
                 } else {
-                    logger.warn("Не удалось определить программу на странице {}", actualPageNumber);
-                    // Создаем запись без программы - пользователь выберет вручную
+                    logger.warn("Не удалось определить программу на странице {}", pageNumber);
                 }
 
                 // 5. Создаем запись
                 ParsedProtocolRecord record = createParsedRecord(
                         employee, examDate, protocolNumber, direction,
-                        pdfDocumentId, actualPageNumber  // ИСПРАВЛЕНО: правильный номер страницы
+                        pdfDocumentId, pageNumber  // Используем правильный номер страницы
                 );
 
                 // Проверяем на дубликаты
                 if (!isDuplicateRecord(records, record)) {
                     records.add(record);
-                    logger.info("✓ ДОБАВЛЕНА ЗАПИСЬ: {} - {} - {}",
+                    logger.info("✓ ДОБАВЛЕНА ЗАПИСЬ: {} - {} - {} (страница {})",
                             employee.getFullName(), examDate,
-                            direction != null ? direction.getName() : "нет программы");
+                            direction != null ? direction.getName() : "нет программы",
+                            pageNumber);
                 } else {
                     logger.info("Запись уже существует, пропускаем");
                 }
 
             } catch (Exception e) {
-                logger.error("Ошибка при обработке страницы {}: {}", actualPageNumber, e.getMessage(), e);
+                logger.error("Ошибка при обработке страницы {}: {}", pageNumber, e.getMessage(), e);
             }
         }
 
-        logger.info("=== Парсинг завершен. Найдено {} записей из {} страниц ===",
-                records.size(), pageNumbers.size());
+        logger.info("=== Парсинг завершен. Найдено {} записей из {} протоколов ===",
+                records.size(), pageSections.length - 1); // -1 потому что первая секция не страница
 
         return records;
     }
@@ -545,7 +722,7 @@ public class PdfProcessingService {
         record.setRegistrationNumber(protocolNumber);
         record.setPdfDocumentId(pdfDocumentId);
         record.setFileName("Протокол_" + employee.getId() + "_" + System.currentTimeMillis() + ".pdf");
-        record.setPageNumber(pageNumber); // Правильный номер страницы
+        record.setPageNumber(pageNumber);
 
         // Сопоставление с сотрудником
         record.setMatchedFullName(employee.getFullName());
@@ -639,145 +816,6 @@ public class PdfProcessingService {
     }
 
     /**
-     * Сохранение подтвержденных записей в БД (БЕЗ создания новых сотрудников)
-     */
-    @Transactional
-    public ProtocolValidationResult saveConfirmedRecords(List<ParsedProtocolRecord> records, Long pdfDocumentId) {
-        PdfDocument pdfDocument = pdfDocumentRepository.findById(pdfDocumentId)
-                .orElseThrow(() -> new RuntimeException("PDF документ не найден"));
-
-        int savedRecords = 0;
-        List<String> errors = new ArrayList<>();
-        List<String> successes = new ArrayList<>();
-
-        for (ParsedProtocolRecord record : records) {
-            if (record == null) {
-                continue;
-            }
-
-            try {
-                // 1. Находим сотрудника (без создания нового)
-                if (record.getMatchedEmployeeId() == null) {
-                    errors.add("Сотрудник не указан для записи: " + record.getFullName());
-                    continue;
-                }
-
-                Employee employee;
-                try {
-                    employee = employeeRepository.findById(record.getMatchedEmployeeId())
-                            .orElseThrow(() -> new RuntimeException("Сотрудник не найден в БД"));
-                } catch (Exception e) {
-                    errors.add("Сотрудник не найден (ID: " + record.getMatchedEmployeeId() + "): " + e.getMessage());
-                    continue;
-                }
-
-                // 2. Находим направление обучения
-                TrainingDirection direction;
-                Long directionId = record.getSelectedDirectionId();
-
-                if (directionId == null) {
-                    errors.add("Направление не указано для " + record.getFullName());
-                    continue;
-                }
-
-                try {
-                    direction = trainingDirectionRepository.findById(directionId)
-                            .orElseThrow(() -> new RuntimeException("Направление не найдено"));
-                } catch (Exception e) {
-                    errors.add("Направление не найдено (ID: " + directionId + ") для " + record.getFullName() + ": " + e.getMessage());
-                    continue;
-                }
-
-                // 3. Проверяем, существует ли уже такая запись об обучении
-                TrainingRecord existingRecord = trainingService.getTrainingRecord(
-                        employee.getId(), direction.getId());
-
-                if (existingRecord != null) {
-                    // Обновляем существующую запись
-                    existingRecord.setExamDate(record.getExamDate());
-                    existingRecord.setProtocolNumber(record.getRegistrationNumber());
-                    existingRecord.setApplicable(true);
-
-                    // Сохраняем файл протокола
-                    File sourceFile = new File(pdfDocument.getFilePath());
-                    String protocolFilename = "protocol_" + employee.getId() + "_" +
-                            direction.getId() + "_" + record.getExamDate().format(
-                            DateTimeFormatter.ofPattern("yyyyMMdd")) + ".pdf";
-                    Path protocolPath = Paths.get("uploads/protocols").resolve(protocolFilename);
-                    Files.copy(sourceFile.toPath(), protocolPath, StandardCopyOption.REPLACE_EXISTING);
-
-                    existingRecord.setFileName(record.getFileName() != null ? record.getFileName() : protocolFilename);
-                    existingRecord.setFilePath(protocolFilename);
-
-                    trainingService.saveTrainingRecordWithoutFile(existingRecord);
-                    successes.add("Обновлена запись для " + employee.getFullName() + " по направлению " + direction.getName());
-                } else {
-                    // Создаем новую запись
-                    TrainingRecord trainingRecord = new TrainingRecord();
-                    trainingRecord.setEmployee(employee);
-                    trainingRecord.setTrainingDirection(direction);
-                    trainingRecord.setExamDate(record.getExamDate());
-                    trainingRecord.setProtocolNumber(record.getRegistrationNumber());
-                    trainingRecord.setApplicable(true);
-
-                    // Сохраняем файл протокола
-                    File sourceFile = new File(pdfDocument.getFilePath());
-                    String protocolFilename = "protocol_" + employee.getId() + "_" +
-                            direction.getId() + "_" + System.currentTimeMillis() + ".pdf";
-                    Path protocolPath = Paths.get("uploads/protocols").resolve(protocolFilename);
-                    Files.copy(sourceFile.toPath(), protocolPath, StandardCopyOption.REPLACE_EXISTING);
-
-                    trainingRecord.setFileName(record.getFileName() != null ? record.getFileName() : protocolFilename);
-                    trainingRecord.setFilePath(protocolFilename);
-
-                    trainingService.saveTrainingRecordWithoutFile(trainingRecord);
-                    successes.add("Создана новая запись для " + employee.getFullName() + " по направлению " + direction.getName());
-                }
-
-                savedRecords++;
-
-            } catch (Exception e) {
-                String errorMsg = String.format("Ошибка при сохранении записи для %s: %s",
-                        record.getFullName(), e.getMessage());
-                logger.error(errorMsg, e);
-                errors.add(errorMsg);
-            }
-        }
-
-        // Обновляем статус PDF документа
-        pdfDocument.setStatus(PdfDocument.ProcessingStatus.PROCESSED);
-
-        StringBuilder processingResult = new StringBuilder();
-        processingResult.append(String.format(
-                "Обработано %d записей из %d", savedRecords, records.size()));
-
-        if (!successes.isEmpty()) {
-            processingResult.append(". Успешно: ").append(String.join("; ",
-                    successes.subList(0, Math.min(successes.size(), 3))));
-        }
-
-        if (!errors.isEmpty()) {
-            processingResult.append(". Ошибки: ").append(String.join("; ",
-                    errors.subList(0, Math.min(errors.size(), 3))));
-            if (errors.size() > 3) {
-                processingResult.append(" и еще ").append(errors.size() - 3).append(" ошибок");
-            }
-        }
-
-        pdfDocument.setProcessingResult(processingResult.toString());
-        pdfDocumentRepository.save(pdfDocument);
-
-        ProtocolValidationResult result = new ProtocolValidationResult();
-        result.setPdfDocumentId(pdfDocumentId);
-        result.setTotalRecords(records.size());
-        result.setValidRecords(savedRecords);
-        result.setAllValid(savedRecords == records.size());
-        result.setErrors(errors);
-        result.setSuccesses(successes);
-        return result;
-    }
-
-    /**
      * Получить все PDF документы
      */
     public List<PdfDocument> getAllPdfDocuments() {
@@ -797,46 +835,5 @@ public class PdfProcessingService {
      */
     public List<TrainingDirection> getAllTrainingDirections() {
         return trainingDirectionRepository.findAllByOrderByNameAsc();
-    }
-
-    // Добавьте этот метод в PdfProcessingService
-    public PdfDocument processOcrWithProgress(Long pdfDocumentId, Consumer<Integer> progressCallback) throws Exception {
-        PdfDocument pdfDocument = pdfDocumentRepository.findById(pdfDocumentId)
-                .orElseThrow(() -> new RuntimeException("PDF документ не найден"));
-
-        pdfDocument.setStatus(PdfDocument.ProcessingStatus.PROCESSING);
-        pdfDocumentRepository.save(pdfDocument);
-
-        File pdfFile = new File(pdfDocument.getFilePath());
-        StringBuilder ocrText = new StringBuilder();
-
-        try (PDDocument document = Loader.loadPDF(pdfFile)) {
-            PDFRenderer renderer = new PDFRenderer(document);
-            int totalPages = document.getNumberOfPages();
-
-            for (int i = 0; i < totalPages; i++) {
-                logger.info("Обработка страницы {} из {}", i + 1, totalPages);
-                BufferedImage image = renderer.renderImageWithDPI(i, 400);
-                String pageText = tesseract.doOCR(image);
-                ocrText.append("=== Страница ").append(i + 1).append(" ===\n");
-                ocrText.append(pageText).append("\n");
-
-                // Обновляем прогресс
-                if (progressCallback != null) {
-                    int progress = (int) ((i + 1) * 100.0 / totalPages);
-                    progressCallback.accept(progress);
-                }
-            }
-
-            pdfDocument.setOcrText(ocrText.toString());
-            pdfDocument.setStatus(PdfDocument.ProcessingStatus.NEEDS_REVIEW);
-            pdfDocument.setProcessedAt(java.time.LocalDateTime.now());
-            return pdfDocumentRepository.save(pdfDocument);
-        } catch (Exception e) {
-            pdfDocument.setStatus(PdfDocument.ProcessingStatus.ERROR);
-            pdfDocument.setProcessingResult("Ошибка OCR: " + e.getMessage());
-            pdfDocumentRepository.save(pdfDocument);
-            throw e;
-        }
     }
 }
